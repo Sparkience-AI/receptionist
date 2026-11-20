@@ -1,0 +1,26 @@
+# Streamlit theme configuration for The Receptionist.
+# High-contrast minimalist palette with Pantone-inspired colors.
+# Gaming-influenced typography for a modern UI.
+
+[theme]
+base = "dark"
+primaryColor = "#FF6B35"          # Pantone Living Coral (17-1564) - vibrant accent
+secondaryBackgroundColor = "#1A1A1A" # Pure charcoal gray - ultra minimal panels  
+backgroundColor = "#000000"        # True black canvas - maximum contrast
+textColor = "#FFFFFF"              # Pure white text - ultimate readability
+font = "monospace"                 # Monospace for gaming aesthetic (closest to Among Us style)
+
+[server]
+headless = true
+runOnSave = true
+enableCORS = false
+enableXsrfProtection = true
+
+[browser]
+gatherUsageStats = false
+serverAddress = "localhost"
+
+# Additional CSS customization for gaming font
+[ui]
+hideTopBar = true
+hideSidebarNav = false

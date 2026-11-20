@@ -1,0 +1,7 @@
+/edge/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.env
+.streamlit/secrets.toml

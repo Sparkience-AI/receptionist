@@ -1,0 +1,5 @@
+streamlit
+pyyaml
+matplotlib
+ollama
+openai

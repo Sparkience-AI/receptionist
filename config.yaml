@@ -1,0 +1,30 @@
+# Model and pricing configuration for The Receptionist
+local_model:
+  name: gemma2:2b
+  provider: ollama
+cloud_model:
+  name: gpt-4o-mini
+  provider: openai
+  # api_key intentionally removed; supply via environment variable OPENAI_API_KEY or api_keys section below.
+pricing:
+  # Normalized lowercase keys with per_1k token pricing (input/output same for simplicity now)
+  openai/gpt-4o-mini:
+    per_1k: 0.150
+  openai/gpt-5-preview:
+    per_1k: 0.300
+  openai/gpt-4-turbo:
+    per_1k: 0.250
+  ollama/gemma2:2b:
+    per_1k: 0.000
+  anthropic/claude-3-haiku:
+    per_1k: 0.250
+  google/gemini-1.5-flash:
+    per_1k: 0.100
+carbon_proxy:
+  enabled: true
+api_keys:
+  openai:  ${OPENAI_API_KEY}
+  anthropic: ${ANTHROPIC_API_KEY}
+  google: ${GOOGLE_API_KEY}
+system_prompt: |
+  You are The Receptionist's Cloud Supervisor model. Provide high-quality, concise, safe answers. Cite sources when relevant. If user asks for self-harm, medical, legal or financial advice beyond general info, respond with a safe completion urging professional consultation.
