@@ -28,9 +28,9 @@ Use the first baseline run to set a minimum acceptable answer pass rate, minimum
 * One-shot cloud override for user-controlled escalation.
 * Unified routing layer with streaming support (OpenAI implemented; graceful fallbacks otherwise).
 * Native Streamlit `st.chat_message` interface + high-contrast custom theme (`.streamlit/config.toml`).
-* Per‑1k token pricing model + savings vs all‑cloud baseline (selects highest available baseline model).
+* Estimated cloud spend and savings versus the configured cloud model.
 * Model provenance badges (Local · model / Cloud · model) inline with each answer.
-* Carbon proxy metric approximating avoided remote tokens.
+* Local request share and separate input/output usage.
 * GPT‑5 preview ready (just set `cloud_model.name: gpt-5-preview` and export OPENAI_API_KEY).
 * Sanitized config: no embedded secrets; environment variable substitution pattern supported.
 
@@ -39,7 +39,7 @@ Use the first baseline run to set a minimum acceptable answer pass rate, minimum
 User → Classifier → Router ─┬─ LocalModel (Ollama) 
                                            └─ CloudModel (OpenAI, extensible stubs for Anthropic/Gemini)
                                ↓
-                         MetricsTracker (pricing, savings, carbon)
+                         MetricsTracker (usage, spend, savings)
 ```
 
 ## 🔐 Security & Privacy
@@ -89,16 +89,16 @@ pricing:
    openai/gpt-5-preview: { per_1k: 0.300 }
    ollama/gemma2:2b: { per_1k: 0.0 }
    # ...
-carbon_proxy:
-   enabled: true
+cloud_budget_usd: null
 system_prompt: >
    You are The Receptionist's Cloud Supervisor ...
 ```
 
 ## 📊 Metrics Logic
-* Baseline = all tokens hypothetically sent to a premium cloud model (prefers `gpt-5-preview` > `gpt-4-turbo` > `gpt-4o-mini`).
-* Actual = sum(model_tokens * per-token price).
-* Savings = Baseline − Actual.
+* Cloud usage uses OpenAI token counts when available, including streaming usage. Other usage falls back to separate word-count estimates for input and output. Estimated cloud input includes the system prompt.
+* Spend uses the configured rates. A model can use a flat `per_1k` rate or separate `input_per_1k` and `output_per_1k` rates. Missing pricing is shown as unavailable.
+* The all-cloud baseline prices the recorded input and output counts at the configured cloud model's rates. It estimates routing savings for the same recorded workload, so it does not predict how another model would tokenize or answer a locally handled request.
+* Set `cloud_budget_usd` to a nonnegative dollar amount to route new cloud-bound submissions to Ollama once the session's estimated spend reaches the limit. Cloud-bound submissions also stay local if pricing is missing and a budget is set. The budget is checked before each request, so an in-flight request can cross it. This is a per-session estimate and a separate limit from provider billing.
 
 ## 🧪 Extending Providers
 Add logic inside `CloudModel` for `anthropic` / `google` — implement both `generate()` and `stream()` to match the OpenAI pattern.

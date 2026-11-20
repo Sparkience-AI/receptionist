@@ -20,8 +20,8 @@ pricing:
     per_1k: 0.250
   google/gemini-1.5-flash:
     per_1k: 0.100
-carbon_proxy:
-  enabled: true
+# Optional USD cap on estimated spend per Streamlit session.
+cloud_budget_usd: null
 api_keys:
   openai:  ${OPENAI_API_KEY}
   anthropic: ${ANTHROPIC_API_KEY}

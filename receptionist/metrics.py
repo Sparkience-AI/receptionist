@@ -1,53 +1,83 @@
-"""Metrics tracking with per-1k token pricing and savings vs all-cloud baseline."""
-import time
-from collections import deque
+"""Cumulative session usage and estimated model spend."""
+from collections import defaultdict, deque
+from decimal import Decimal
+from time import time
+
 
 class MetricsTracker:
-	def __init__(self, pricing, carbon_enabled=True, max_history=200):
-		self.pricing = pricing  # dict: provider/model -> {per_1k: float}
-		self.carbon_enabled = carbon_enabled
-		self.local_tokens = 0
-		self.cloud_tokens = 0
-		self.history = deque(maxlen=max_history)
-		self.start_time = time.time()
+    def __init__(self, pricing, baseline_model, max_history=200):
+        self.pricing = pricing
+        self.baseline_model = baseline_model
+        self.history = deque(maxlen=max_history)
+        self.usage = defaultdict(lambda: [0, 0])
+        self.requests = {"local": 0, "cloud": 0}
+        self.estimated_requests = 0
 
-	def _price_per_token(self, key: str) -> float:
-		entry = self.pricing.get(key, {})
-		per_1k = entry.get('per_1k') or entry.get('per1000') or 0.0
-		return per_1k / 1000.0
+    def _rates(self, model_key):
+        entry = self.pricing.get(model_key, {})
+        flat = entry.get("per_1k", entry.get("per1000"))
+        return tuple(entry.get(field, flat) for field in (
+            "input_per_1k", "output_per_1k",
+        ))
 
-	def record(self, prompt: str, response: str, model_type: str, tokens_used: int, model_key: str):
-		if model_type == 'local':
-			self.local_tokens += tokens_used
-		else:
-			self.cloud_tokens += tokens_used
-		self.history.append({
-			't': time.time(),
-			'model_type': model_type,
-			'tokens': tokens_used,
-			'model_key': model_key
-		})
+    def _cost(self, model_key, input_tokens, output_tokens):
+        rates = self._rates(model_key)
+        if None in rates:
+            return None
+        return (Decimal(str(rates[0])) * input_tokens
+                + Decimal(str(rates[1])) * output_tokens) / 1000
 
-	def get_metrics(self):
-		total_tokens = self.local_tokens + self.cloud_tokens
-		# Determine representative cloud baseline (choose highest priced OpenAI model if present else fall back)
-		candidate_baseline = 'openai/gpt-5-preview' if 'openai/gpt-5-preview' in self.pricing else (
-			'openai/gpt-4-turbo' if 'openai/gpt-4-turbo' in self.pricing else 'openai/gpt-4o-mini'
-		)
-		baseline_cost = total_tokens * self._price_per_token(candidate_baseline)
-		# Actual cost: sum history cost
-		actual_cost = 0.0
-		for record in self.history:
-			actual_cost += record['tokens'] * self._price_per_token(record['model_key'])
-		savings = baseline_cost - actual_cost
-		carbon_proxy = (self.local_tokens * 0.00001) if self.carbon_enabled else 0.0
-		return {
-			'total_tokens': total_tokens,
-			'cloud_tokens': self.cloud_tokens,
-			'local_tokens': self.local_tokens,
-			'baseline_cost': baseline_cost,
-			'actual_cost': actual_cost,
-			'savings': savings,
-			'carbon_proxy': carbon_proxy,
-			'history': list(self.history)
-		}
+    def record(self, model_type, model_key, input_tokens, output_tokens, *, estimated):
+        totals = self.usage[model_type, model_key]
+        totals[0] += input_tokens
+        totals[1] += output_tokens
+        self.requests[model_type] += 1
+        self.estimated_requests += int(estimated)
+        self.history.append({
+            "t": time(), "model_type": model_type, "model_key": model_key,
+            "tokens": input_tokens + output_tokens,
+            "input_tokens": input_tokens, "output_tokens": output_tokens,
+            "usage_estimated": estimated,
+        })
+
+    def _cloud_spend(self):
+        total = Decimal(0)
+        for (model_type, model_key), (inputs, outputs) in self.usage.items():
+            if model_type == "cloud":
+                cost = self._cost(model_key, inputs, outputs)
+                if cost is None:
+                    return None
+                total += cost
+        return total
+
+    def cloud_budget_reason(self, budget_usd, cloud_model_key):
+        if budget_usd is None:
+            return None
+        budget = Decimal(str(budget_usd))
+        if not budget.is_finite() or budget < 0:
+            raise ValueError('cloud_budget_usd must be finite and nonnegative')
+        spend = self._cloud_spend()
+        if spend is None or None in self._rates(cloud_model_key):
+            return "cloud pricing unavailable"
+        if spend >= budget:
+            return "session cloud budget reached"
+        return None
+
+    def get_metrics(self):
+        local_tokens = sum(sum(counts) for (kind, _), counts in self.usage.items() if kind == "local")
+        cloud_tokens = sum(sum(counts) for (kind, _), counts in self.usage.items() if kind == "cloud")
+        inputs = sum(counts[0] for counts in self.usage.values())
+        outputs = sum(counts[1] for counts in self.usage.values())
+        baseline = self._cost(self.baseline_model, inputs, outputs)
+        actual = self._cloud_spend()
+        requests = sum(self.requests.values())
+        return {
+            "total_tokens": local_tokens + cloud_tokens,
+            "local_tokens": local_tokens, "cloud_tokens": cloud_tokens,
+            "input_tokens": inputs, "output_tokens": outputs,
+            "baseline_cost": baseline, "actual_cost": actual,
+            "savings": baseline - actual if baseline is not None and actual is not None else None,
+            "local_request_share": self.requests["local"] / requests if requests else 0,
+            "estimated_requests": self.estimated_requests,
+            "history": list(self.history),
+        }
