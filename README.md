@@ -6,7 +6,7 @@ Cost-aware, safety-first AI query routing between local (edge) and cloud foundat
 
 The Receptionist routes everyday developer questions between local Ollama and cloud OpenAI models. It is for individual developers who want control over when prompts leave their machine and a clear view of which model answered, why it was selected, and how routing affects estimated cloud spend.
 
-Planned routing controls include Local Only by default, opt-in automatic routing, and a manual override for a single cloud request. Routing explanations and the cost dashboard make each choice visible.
+Local Only is the default. Select Auto to let the classifier route prompts to the cloud, or select Send next prompt to cloud to send one prompt before returning to your selected mode. Routing explanations and the cost dashboard make each choice visible.
 
 | Workflow | A passing answer |
 | --- | --- |
@@ -16,7 +16,7 @@ Planned routing controls include Local Only by default, opt-in automatic routing
 
 ### Success criteria
 
-- **Privacy** — Local Only makes zero cloud calls, including when Ollama fails.
+- **Privacy** — Local Only submissions stay local even when Ollama fails. The one-shot cloud override explicitly authorizes a separate cloud submission.
 - **Answer quality** — Compare pass rates for automatic routing, all-local, and all-cloud runs using the same held-out prompts and workflow criteria.
 - **Estimated cost** — Compare cloud spend with the configured all-cloud baseline and document the pricing and usage assumptions.
 - **Latency** — Compare median and p95 time to a complete answer across the same prompts and record the local hardware used.
@@ -25,7 +25,7 @@ Use the first baseline run to set a minimum acceptable answer pass rate, minimum
 
 ## ✨ Key Features
 * Heuristic safety & complexity classifier (no heavy deps) decides local vs cloud.
-* Manual override (Force Cloud) for user-controlled escalation.
+* One-shot cloud override for user-controlled escalation.
 * Unified routing layer with streaming support (OpenAI implemented; graceful fallbacks otherwise).
 * Native Streamlit `st.chat_message` interface + high-contrast custom theme (`.streamlit/config.toml`).
 * Per‑1k token pricing model + savings vs all‑cloud baseline (selects highest available baseline model).
@@ -45,7 +45,7 @@ User → Classifier → Router ─┬─ LocalModel (Ollama)
 ## 🔐 Security & Privacy
 * API keys pulled from environment (e.g. `OPENAI_API_KEY`).
 * Config allows `${VAR_NAME}` placeholders; do not commit secrets.
-* Safety keywords cause automatic cloud escalation (supervisor quality model).
+* In Auto mode, some keywords trigger cloud routing. Cloud requests send the current prompt and configured system prompt. Chat history stays in the Streamlit session, and the dashboard records usage metadata.
 
 ## 🚀 Getting Started
 1. Clone the repo

@@ -4,7 +4,6 @@ from receptionist.config import load_config
 from receptionist.router import route_query
 from receptionist.metrics import MetricsTracker
 from receptionist.utils import count_tokens
-import time, os
 
 st.set_page_config(page_title="The Receptionist", layout="wide")
 config = load_config()
@@ -18,7 +17,7 @@ if 'last_classification' not in st.session_state:
 	st.session_state.last_classification = None
 
 st.title("The Receptionist")
-st.caption("Cost-aware, safety-first AI routing between local and cloud models.")
+st.caption("Cost-aware AI routing between local and cloud models.")
 
 with st.sidebar:
 	st.header("Dashboard")
@@ -30,7 +29,8 @@ with st.sidebar:
 	st.metric("$ Saved", f"${dash['savings']:.3f}")
 	st.metric("Carbon Proxy", f"{dash['carbon_proxy']:.4f}")
 	st.divider()
-	manual_escalate = st.checkbox("Force Cloud Escalation", value=False)
+	routing_mode = st.radio("Routing mode", ("Local Only", "Auto"), help="Auto may send your current prompt to the configured cloud provider.")
+	st.checkbox("Send next prompt to cloud", key="send_to_cloud", help="Sends one prompt to the configured cloud provider, then returns to the selected mode.")
 	streaming = st.checkbox("Stream Responses", value=True)
 	st.write("Model Config:")
 	st.code(f"Local: {config.get('local_model',{}).get('name')}\nCloud: {config.get('cloud_model',{}).get('name')}")
@@ -62,13 +62,22 @@ for m in st.session_state.messages:
 		badge = f"`{m['label']}`"
 		st.markdown(f"{badge}  \n{m['content']}")
 
-user_input = st.chat_input("Ask something...")
+def consume_cloud_override():
+	st.session_state.cloud_override = st.session_state.send_to_cloud
+	st.session_state.send_to_cloud = False
+
+
+user_input = st.chat_input("Ask something...", on_submit=consume_cloud_override)
 if user_input:
 	st.session_state.messages.append({'role':'user','content':user_input,'model':'user','label':'User'})
 	with st.chat_message('user', avatar="🧑"):
 		st.markdown(user_input)
 	# Route
-	model_type, resp_obj, label, cls = route_query(user_input, config, escalate=manual_escalate, stream=streaming)
+	manual_escalate = st.session_state.pop("cloud_override", False)
+	model_type, resp_obj, label, cls = route_query(
+		user_input, config, escalate=manual_escalate, stream=streaming,
+		local_only=routing_mode == "Local Only" and not manual_escalate,
+	)
 	# Assistant message container
 	with st.chat_message('assistant', avatar=("☁️" if model_type=='cloud' else "💻")):
 		badge = f"**{label}**"
