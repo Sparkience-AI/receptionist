@@ -1,0 +1,78 @@
+name: Live provider smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/provider-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  ollama:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - name: Start Ollama and pull the configured model
+        run: |
+          curl -fsSL https://ollama.com/install.sh -o "$RUNNER_TEMP/install-ollama.sh"
+          sh "$RUNNER_TEMP/install-ollama.sh"
+          if ! curl -fsS http://localhost:11434/api/tags >/dev/null; then
+            ollama serve > "$RUNNER_TEMP/ollama.log" 2>&1 &
+          fi
+          curl --fail --retry 15 --retry-delay 2 --retry-connrefused http://localhost:11434/api/tags
+          model=$(python -c 'from receptionist.config import load_config; print(load_config()["local_model"]["name"])')
+          ollama pull "$model"
+      - name: Verify Local Only with no cloud key
+        env:
+          OPENAI_API_KEY: ''
+        run: |
+          python - <<'PY'
+          from receptionist.router import route_query
+
+          provider, reply, label, decision = route_query("Reply with just OK.", local_only=True)
+          assert provider == "local" and decision["reason"] == "local only", (provider, decision)
+          if not isinstance(reply, str) or not reply.strip():
+              raise SystemExit(f"{label}: {reply or 'empty reply'}")
+          print(f"{label}: live generation passed")
+          PY
+  openai:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - name: Verify the configured OpenAI model with an existing Actions secret
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::notice::OpenAI live check skipped because the repository has no OPENAI_API_KEY Actions secret."
+            echo "OpenAI live check skipped. No OPENAI_API_KEY Actions secret was available." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          python - <<'PY'
+          from receptionist.router import route_query
+
+          usage = []
+          provider, reply, label, decision = route_query(
+              "Reply with just OK.", escalate=True, stream=True,
+              on_usage=lambda inputs, outputs: usage.append((inputs, outputs)),
+          )
+          assert provider == "cloud" and decision["reason"] == "manual override"
+          if not "".join(reply).strip() or not usage:
+              raise SystemExit(f"{label}: missing reply or usage")
+          print(f"{label}: live streaming and usage passed")
+          PY
