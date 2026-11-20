@@ -31,7 +31,6 @@ Use the first baseline run to set a minimum acceptable answer pass rate, minimum
 * Estimated cloud spend and savings versus the configured cloud model.
 * Model provenance badges (Local · model / Cloud · model) inline with each answer.
 * Local request share and separate input/output usage.
-* GPT‑5 preview ready (just set `cloud_model.name: gpt-5-preview` and export OPENAI_API_KEY).
 * Sanitized config: no embedded secrets; environment variable substitution pattern supported.
 
 ## 🧩 Architecture
@@ -47,25 +46,40 @@ User → Classifier → Router ─┬─ LocalModel (Ollama)
 * Config allows `${VAR_NAME}` placeholders; do not commit secrets.
 * In Auto mode, some keywords trigger cloud routing. Cloud requests send the current prompt and configured system prompt. Chat history stays in the Streamlit session, and the dashboard records usage metadata.
 
-## 🚀 Getting Started
-1. Clone the repo
-2. Create / activate a Python 3.11+ environment
-3. Install dependencies:
-    ```shell
-    pip install -r requirements.txt
-    ```
-4. Export your keys (PowerShell example):
-    ```powershell
-    $env:OPENAI_API_KEY = "sk-..."
-    ```
-5. (Optional) Pull a local Ollama model (example):
-    ```shell
-    ollama pull gemma2:2b
-    ```
-6. Run the app:
-    ```shell
-    streamlit run streamlit_app.py
-    ```
+## Getting started
+
+Use Python 3.11 and [Ollama](https://ollama.com/download). Run these commands from the repository root after cloning.
+
+```powershell
+# Windows PowerShell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+```bash
+# macOS or Linux
+python3.11 -m venv .venv
+source .venv/bin/activate
+```
+
+```shell
+python -m pip install -r requirements.txt
+ollama pull gemma2:2b
+python -m streamlit run streamlit_app.py
+```
+
+Start Ollama before pulling the model. If needed, run `ollama serve` in a separate terminal. Leave the app in **Local Only** and send a simple prompt to verify the local setup. The response should show the local model. No cloud key is needed.
+
+To check OpenAI, set `OPENAI_API_KEY` as an environment variable before launching Streamlit. Select **Send next prompt to cloud** and submit a synthetic prompt such as “Reply with OK.” Confirm the cloud model label and usage in the dashboard. This request may incur a charge.
+
+## Automated checks
+
+```shell
+python -m unittest discover -s tests -v
+python routing_benchmark.py --mock
+```
+
+GitHub Actions runs both commands on Python 3.11. The suite uses simulated providers, so it needs neither Ollama nor OpenAI credentials. Run the local and cloud checks above separately to verify the configured models.
 
 ## Routing benchmark
 

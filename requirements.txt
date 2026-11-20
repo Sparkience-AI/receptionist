@@ -1,5 +1,4 @@
-streamlit
-pyyaml
-matplotlib
-ollama
-openai
+streamlit==1.48.1
+PyYAML==6.0.2
+openai==1.99.9
+httpx==0.28.1
