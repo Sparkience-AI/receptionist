@@ -6,7 +6,7 @@ Cost-aware, safety-first AI query routing between local (edge) and cloud foundat
 
 The Receptionist routes everyday developer questions between local Ollama and cloud OpenAI models. It is for individual developers who want control over when prompts leave their machine and a clear view of which model answered, why it was selected, and how routing affects estimated cloud spend.
 
-Local Only is the default. Select Auto to let the classifier route prompts to the cloud, or select Send next prompt to cloud to send one prompt before returning to your selected mode. Routing explanations and the cost dashboard make each choice visible.
+Local Only is the default. Select Auto to let the classifier route prompts to the cloud, or select Send next prompt to cloud to send one prompt before returning to your selected mode. Each reply shows the provider and model, routing reason, response time, and estimated cloud cost. Earlier messages remain visible in the chat. Each request uses the current prompt, plus the configured system prompt for cloud requests.
 
 | Workflow | A passing answer |
 | --- | --- |

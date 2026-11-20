@@ -20,7 +20,8 @@ class MetricsTracker:
             "input_per_1k", "output_per_1k",
         ))
 
-    def _cost(self, model_key, input_tokens, output_tokens):
+    def estimate_cost(self, model_key, input_tokens, output_tokens):
+        """Estimate a request's cost from configured rates and usage."""
         rates = self._rates(model_key)
         if None in rates:
             return None
@@ -44,7 +45,7 @@ class MetricsTracker:
         total = Decimal(0)
         for (model_type, model_key), (inputs, outputs) in self.usage.items():
             if model_type == "cloud":
-                cost = self._cost(model_key, inputs, outputs)
+                cost = self.estimate_cost(model_key, inputs, outputs)
                 if cost is None:
                     return None
                 total += cost
@@ -68,7 +69,7 @@ class MetricsTracker:
         cloud_tokens = sum(sum(counts) for (kind, _), counts in self.usage.items() if kind == "cloud")
         inputs = sum(counts[0] for counts in self.usage.values())
         outputs = sum(counts[1] for counts in self.usage.values())
-        baseline = self._cost(self.baseline_model, inputs, outputs)
+        baseline = self.estimate_cost(self.baseline_model, inputs, outputs)
         actual = self._cloud_spend()
         requests = sum(self.requests.values())
         return {

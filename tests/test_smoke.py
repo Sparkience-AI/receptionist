@@ -82,6 +82,9 @@ class CoreSmokeTests(unittest.TestCase):
                 messages = app.session_state.messages
                 self.assertEqual(messages[-1]["classification"]["reason"], "manual override")
                 self.assertEqual(messages[-1]["content"], answer)
+                self.assertEqual(messages[-1]["details"]["provider"], "openai")
+                self.assertGreaterEqual(messages[-1]["details"]["seconds"], 0)
+                self.assertEqual(messages[-1]["details"]["cloud_cost"], Decimal("0.0015"))
 
                 ollama.side_effect = None
                 ollama.return_value = SimpleNamespace(returncode=0, stdout=answer.encode())
@@ -91,5 +94,11 @@ class CoreSmokeTests(unittest.TestCase):
                 self.assertEqual(messages[-1]["model"], "local")
                 self.assertEqual(messages[-1]["content"], answer)
                 create.assert_called_once()
+                sent = create.call_args.kwargs['messages']
+                self.assertEqual([m['role'] for m in sent], ['system', 'user'])
+                self.assertEqual(sent[-1]['content'], prompt)
+                captions = [caption.value for caption in app.caption]
+                self.assertTrue(any('Each reply uses only the current prompt' in caption for caption in captions))
+                self.assertTrue(any('Estimated cloud cost: $0.001500' in caption for caption in captions))
                 self.assertEqual(len(app.chat_message), 6)
                 self.assertEqual(app.session_state.usage_metrics.get_metrics()["cloud_tokens"], 10)

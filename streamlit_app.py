@@ -1,4 +1,6 @@
 """Streamlit UI for The Receptionist (revamped)."""
+from time import perf_counter
+
 import streamlit as st
 from receptionist.config import load_config
 from receptionist.router import route_query
@@ -24,12 +26,39 @@ metrics = st.session_state.usage_metrics
 budget_reason = metrics.cloud_budget_reason(cloud_budget_usd, cloud_model_key)
 
 
-def usd(value):
-	return f"${value:.4f}" if value is not None else "Unavailable"
+def usd(value, decimals=4):
+	return f"${value:.{decimals}f}" if value is not None else "Unavailable"
+
+
+ROUTING_EXPLANATIONS = {
+	"local only": "Local Only was selected.",
+	"manual override": "You chose to send this prompt to the cloud.",
+	"safety escalation": "Auto matched a keyword that triggers cloud routing.",
+	"greeting / acknowledgment": "Auto recognized a greeting or acknowledgment.",
+	"length override": "Auto sent the prompt to the cloud because it exceeded the local word limit.",
+	"score >= boundary": "The Auto routing score met the cloud threshold.",
+	"score < boundary": "The Auto routing score was below the cloud threshold.",
+	"session cloud budget reached": "The session cloud budget was reached, so the prompt went local.",
+	"cloud pricing unavailable": "Cloud pricing was unavailable, so the budget guard kept the prompt local.",
+}
+
+
+def show_response_details(message):
+	classification = message.get("classification")
+	if not classification:
+		return
+	reason = classification["reason"]
+	st.caption(ROUTING_EXPLANATIONS.get(reason, reason))
+	details = message.get("details")
+	if details:
+		cost = usd(details["cloud_cost"], decimals=6)
+		st.caption(f"Provider: {details['provider']} · Response time: {details['seconds']:.2f} s · Estimated cloud cost: {cost}")
+	with st.expander("Routing details"):
+		st.json(classification)
 
 
 st.title("The Receptionist")
-st.caption("Cost-aware AI routing between local and cloud models.")
+st.caption("Each reply uses only the current prompt. Cloud requests also include the configured system instructions. Earlier messages stay in this session.")
 
 with st.sidebar:
 	st.header("Dashboard")
@@ -47,8 +76,8 @@ with st.sidebar:
 	if budget_reason:
 		st.warning(f"Cloud requests will run locally: {budget_reason}.")
 	st.divider()
-	routing_mode = st.radio("Routing mode", ("Local Only", "Auto"), help="Auto may send your current prompt to the configured cloud provider.")
-	st.checkbox("Send next prompt to cloud", key="send_to_cloud", help="Sends one prompt to the configured cloud provider, then returns to the selected mode.")
+	routing_mode = st.radio("Routing mode", ("Local Only", "Auto"), help="Auto can send this prompt and the configured system instructions to the cloud provider.")
+	st.checkbox("Send next prompt to cloud", key="send_to_cloud", help="Sends your next prompt and the configured system instructions to the cloud provider, then returns to the selected mode.")
 	streaming = st.checkbox("Stream Responses", value=True)
 	st.write("Model Config:")
 	st.code(f"Local: {config.get('local_model',{}).get('name')}\nCloud: {config.get('cloud_model',{}).get('name')}")
@@ -84,6 +113,7 @@ for m in st.session_state.messages:
 		if m.get('error'):
 			status = "Partial response" if m['content'].strip() else "Request failed"
 			st.error(f"{status}: {m['error']}")
+		show_response_details(m)
 
 def consume_cloud_override():
 	st.session_state.cloud_override = st.session_state.send_to_cloud
@@ -102,6 +132,7 @@ if user_input:
 	def collect_usage(input_tokens, output_tokens):
 		usage[:] = [input_tokens, output_tokens]
 
+	response_started = perf_counter()
 	model_type, resp_obj, label, cls = route_query(
 		user_input, config, escalate=manual_escalate, stream=streaming,
 		local_only=routing_mode == "Local Only" and not manual_escalate,
@@ -130,16 +161,25 @@ if user_input:
 			failure = str(error)
 			status = "Partial response" if response_text.strip() else "Request failed"
 			st.error(f"{status}: {failure}")
-		with st.expander("Routing Details", expanded=False):
-			st.json(cls)
+	elapsed = perf_counter() - response_started
 	# Metrics
 	model_key = cloud_model_key if model_type == "cloud" else f"{config.get('local_model', {}).get('provider', 'ollama')}/{config.get('local_model', {}).get('name', 'gemma2:2b')}"
 	system_prompt = (config.get("system_prompt") or "") if model_type == "cloud" else ""
 	input_tokens, output_tokens = usage or [
 		count_tokens(user_input) + count_tokens(system_prompt), count_tokens(response_text),
 	]
+	cloud_cost = 0 if model_type == "local" else None
 	if failure is None or usage or response_text.strip():
 		metrics.record(model_type, model_key, input_tokens, output_tokens, estimated=not usage)
-	st.session_state.messages.append({'role':'assistant','content':response_text,'model':model_type,'label':label,'classification':cls,'error':failure})
+		if model_type == "cloud":
+			cloud_cost = metrics.estimate_cost(model_key, input_tokens, output_tokens)
+	st.session_state.messages.append({
+		"role": "assistant", "content": response_text, "model": model_type,
+		"label": label, "classification": cls, "error": failure,
+		"details": {
+			"provider": model_key.split("/", 1)[0], "seconds": elapsed,
+			"cloud_cost": cloud_cost,
+		},
+	})
 	st.session_state.last_classification = cls
 	st.rerun()
