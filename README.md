@@ -2,6 +2,27 @@
 
 Cost-aware, safety-first AI query routing between local (edge) and cloud foundation models with transparent metrics and streaming chat UI.
 
+## V1 private beta
+
+The Receptionist routes everyday developer questions between local Ollama and cloud OpenAI models. It is for individual developers who want control over when prompts leave their machine and a clear view of which model answered, why it was selected, and how routing affects estimated cloud spend.
+
+The beta will offer Local Only as the default, opt-in automatic routing, and a manual override for a single cloud request. The routing explanation and cost dashboard are part of the beta experience.
+
+| Workflow | A passing answer |
+| --- | --- |
+| Quick developer lookup | Gives the correct command, syntax, or concept with enough context to use it. |
+| Code explanation | Explains what the snippet does and identifies the relevant behavior or edge case. |
+| Small-snippet debugging | Identifies a plausible cause and gives a concrete next step the developer can verify. |
+
+### Beta release criteria
+
+- **Privacy** — Local Only makes zero cloud calls, including when Ollama fails.
+- **Answer quality** — Compare pass rates for automatic routing, all-local, and all-cloud runs using the same held-out prompts and workflow criteria.
+- **Estimated cost** — Compare cloud spend with the configured all-cloud baseline and document the pricing and usage assumptions.
+- **Latency** — Compare median and p95 time to a complete answer across the same prompts and record the local hardware used.
+
+Use the first baseline run to set a minimum acceptable answer pass rate, minimum worthwhile savings, and maximum acceptable p95 latency before tuning the router or opening the beta.
+
 ## ✨ Key Features
 * Heuristic safety & complexity classifier (no heavy deps) decides local vs cloud.
 * Manual override (Force Cloud) for user-controlled escalation.
