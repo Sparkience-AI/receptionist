@@ -67,6 +67,15 @@ User → Classifier → Router ─┬─ LocalModel (Ollama)
     streamlit run streamlit_app.py
     ```
 
+## Routing benchmark
+
+Run from the repository root after installing dependencies.
+
+- `python routing_benchmark.py --mock` runs the smoke comparison without model calls.
+- `python routing_benchmark.py --live --split holdout` runs the held-out prompts with Ollama and the configured cloud model. Live mode sends synthetic benchmark prompts to the cloud and can incur charges.
+
+The starter set uses simple expected-content checks for quality. Review misses by case ID, and use the development split for tuning. The Local Only policy probe runs separately with mocked providers. Cost is estimated from word counts and configured pricing. Latency covers one non-streaming request per case and strategy.
+
 ## ⚙️ Configuration (`config.yaml`)
 ```
 local_model:
