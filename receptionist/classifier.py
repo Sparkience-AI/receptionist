@@ -5,12 +5,13 @@ Goals:
  - Provide structured explanation & confidence for UI transparency & future learning.
  - Conservative safety-first escalation.
  - Adaptable thresholds from config, with sane defaults.
- - Caching to avoid recomputing repeated prompts within a session.
+ - Bounded caching for repeated prompts at the same routing thresholds.
 """
 from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import Dict, Any
-import re, math, time
+import re, time
+from threading import Lock
 from collections import OrderedDict
 
 # === Patterns & Keyword Sets ===
@@ -48,7 +49,7 @@ WEIGHTS = {
 @dataclass
 class ClassificationResult:
 	decision: str            # 'local' | 'cloud'
-	confidence: float        # 0..1 relative certainty distance from boundary
+	confidence: float        # heuristic score, not a calibrated probability
 	escalate_score: float    # raw composite score 0..1
 	reason: str
 	features: Dict[str, Any]
@@ -61,19 +62,28 @@ class ClassificationResult:
 
 # Simple LRU cache
 _CACHE_MAX = 256
-_cache: OrderedDict[str, ClassificationResult] = OrderedDict()
+_CacheKey = tuple[str, float, int]
+_cache: OrderedDict[_CacheKey, ClassificationResult] = OrderedDict()
+_cache_lock = Lock()
 
-def _cache_get(key: str) -> ClassificationResult | None:
-	res = _cache.get(key)
-	if res:
+
+def _cache_get(key: _CacheKey) -> ClassificationResult | None:
+	with _cache_lock:
+		result = _cache.get(key)
+		if result is not None:
+			_cache.move_to_end(key)
+		return result
+
+
+def _cache_put(key: _CacheKey, value: ClassificationResult):
+	# Keep a private copy so callers cannot mutate later cache hits.
+	snapshot = ClassificationResult(**value.to_dict())
+	with _cache_lock:
+		_cache[key] = snapshot
 		_cache.move_to_end(key)
-	return res
+		if len(_cache) > _CACHE_MAX:
+			_cache.popitem(last=False)
 
-def _cache_put(key: str, value: ClassificationResult):
-	_cache[key] = value
-	_cache.move_to_end(key)
-	if len(_cache) > _CACHE_MAX:
-		_cache.popitem(last=False)
 
 def _normalize_len(word_count: int, cap: int = 120) -> float:
 	return min(word_count / cap, 1.0)
@@ -85,18 +95,19 @@ def classify(prompt: str, config: Dict[str, Any] | None = None) -> Classificatio
 	if not raw:
 		return ClassificationResult('local', 1.0, 0.0, 'empty prompt', {'empty': True})
 
-	cached = _cache_get(low)
-	if cached:
-		# return a shallow copy marking cached to ensure latency stable
-		return ClassificationResult(**{**cached.to_dict(), 'cached': True, 'latency_ms': (time.perf_counter()-start)*1000})
-
 	thresholds = DEFAULT_THRESHOLDS.copy()
 	if config and 'classification' in config:
 		thresholds.update(config['classification'].get('thresholds', {}))
 
+	boundary = thresholds['escalate_score_threshold']
+	max_local_words = thresholds['max_local_words']
+	key = (raw, boundary, max_local_words)
+	cached = _cache_get(key)
+	if cached is not None:
+		return ClassificationResult(**{**cached.to_dict(), 'cached': True, 'latency_ms': (time.perf_counter()-start)*1000})
+
 	words = raw.split()
 	word_count = len(words)
-	token_like = word_count  # simple approx
 
 	# Feature detection
 	safety_hit = any(kw in low for kw in SAFETY_KEYWORDS)
@@ -113,13 +124,13 @@ def classify(prompt: str, config: Dict[str, Any] | None = None) -> Classificatio
 		result = ClassificationResult('cloud', 1.0, 1.0, 'safety escalation', {
 			'safety_hit': True
 		}, latency_ms=(time.perf_counter()-start)*1000)
-		_cache_put(low, result)
+		_cache_put(key, result)
 		return result
 	if greeting:
 		result = ClassificationResult('local', 0.95, 0.0, 'greeting / acknowledgment', {
 			'greeting': True
 		}, latency_ms=(time.perf_counter()-start)*1000)
-		_cache_put(low, result)
+		_cache_put(key, result)
 		return result
 
 	# Scoring components
@@ -134,14 +145,13 @@ def classify(prompt: str, config: Dict[str, Any] | None = None) -> Classificatio
 	escalate_score = sum(score_components[k] * WEIGHTS[k] for k in WEIGHTS)
 
 	# Decision boundary
-	boundary = thresholds['escalate_score_threshold']
 	decision = 'cloud' if escalate_score >= boundary else 'local'
 	# Confidence = distance from boundary scaled by maximum possible weight sum (1)
 	confidence = abs(escalate_score - boundary) + (0.05 if decision == 'cloud' and has_code else 0.0)
 	confidence = min(confidence, 1.0)
 
 	# Additional length guardrail: if predicted local but quite long, escalate
-	if decision == 'local' and word_count > thresholds['max_local_words']:
+	if decision == 'local' and word_count > max_local_words:
 		decision = 'cloud'
 		reason = 'length override'
 	else:
@@ -158,7 +168,7 @@ def classify(prompt: str, config: Dict[str, Any] | None = None) -> Classificatio
 		'boundary': boundary
 	}
 	result = ClassificationResult(decision, round(confidence,4), round(escalate_score,4), reason, features, latency_ms=(time.perf_counter()-start)*1000)
-	_cache_put(low, result)
+	_cache_put(key, result)
 	return result
 
 def classify_prompt(prompt: str) -> str:  # backward compatibility simple label

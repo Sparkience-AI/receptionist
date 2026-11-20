@@ -24,7 +24,7 @@ Local Only is the default. Select Auto to let the classifier route prompts to th
 Use the first baseline run to set a minimum acceptable answer pass rate, minimum worthwhile savings, and maximum acceptable p95 latency before tuning the router.
 
 ## ✨ Key Features
-* Heuristic safety & complexity classifier (no heavy deps) decides local vs cloud.
+* In Auto mode, a lightweight classifier uses keywords, prompt features, and thresholds to choose local or cloud. Its routing score and confidence are heuristics, not calibrated probabilities.
 * One-shot cloud override for user-controlled escalation.
 * OpenAI streaming and buffered Ollama output with original formatting. Provider failures appear in chat with the selected model, and partial output stays visible.
 * Native Streamlit `st.chat_message` interface + high-contrast custom theme (`.streamlit/config.toml`).
