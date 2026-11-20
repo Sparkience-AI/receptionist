@@ -36,7 +36,7 @@ Use the first baseline run to set a minimum acceptable answer pass rate, minimum
 ## 🧩 Architecture
 ```
 User → Classifier → Router ─┬─ LocalModel (Ollama) 
-                                           └─ CloudModel (OpenAI, extensible stubs for Anthropic/Gemini)
+                                           └─ CloudModel (OpenAI / Anthropic / Gemini)
                                ↓
                          MetricsTracker (usage, spend, savings)
 ```
@@ -71,6 +71,12 @@ python -m streamlit run streamlit_app.py
 Start Ollama before pulling the model. If needed, run `ollama serve` in a separate terminal. Leave the app in **Local Only** and send a simple prompt to verify the local setup. The response should show the local model. No cloud key is needed.
 
 To check OpenAI, set `OPENAI_API_KEY` as an environment variable before launching Streamlit. Select **Send next prompt to cloud** and submit a synthetic prompt such as “Reply with OK.” Confirm the cloud model label and usage in the dashboard. This request may incur a charge.
+
+### Bring your own cloud key
+
+Select OpenAI, Anthropic, or Gemini in the sidebar and choose a model ID. Enter the provider's key in the password field. The key overrides configured credentials for that provider for the current session. Clearing the field restores the configured credential, when available. Local Only stays the default. Auto or a one-shot cloud send uses the selected provider.
+
+OpenAI streams replies. Anthropic and Gemini return a complete reply at once. To see estimated cost for a model, add its provider/model entry under `pricing` in `config.yaml` (use `google` for Gemini). If a cloud budget is configured, missing pricing blocks cloud routing.
 
 ## Automated checks
 
@@ -115,11 +121,8 @@ system_prompt: >
 * The all-cloud baseline prices the recorded input and output counts at the configured cloud model's rates. It estimates routing savings for the same recorded workload, so it does not predict how another model would tokenize or answer a locally handled request.
 * Set `cloud_budget_usd` to a nonnegative dollar amount to route new cloud-bound submissions to Ollama once the session's estimated spend reaches the limit. Cloud-bound submissions also stay local if pricing is missing and a budget is set. The budget is checked before each request, so an in-flight request can cross it. This is a per-session estimate and a separate limit from provider billing.
 
-## 🧪 Extending Providers
-Add logic inside `CloudModel` for `anthropic` / `google` — implement both `generate()` and `stream()` to match the OpenAI pattern.
-
 ## 🛣️ Roadmap Ideas
-* Anthropic / Gemini streaming
+* Native streaming for Anthropic and Gemini
 * Fine-grained token accounting (tiktoken)
 * Adaptive learning router with feedback loop
 * PII redaction + opt‑in analytics

@@ -8,6 +8,7 @@ from httpx import HTTPError
 from openai import APITimeoutError, AuthenticationError, NotFoundError, OpenAIError, RateLimitError
 from openai import OpenAI as OpenAIClient
 
+from .byok import generate as generate_byok
 from .errors import ProviderError
 
 
@@ -16,14 +17,15 @@ class CloudModel:
         self.name = config.get('name', 'gpt-4o-mini')
         self.provider = config.get('provider', 'openai')
         self.api_key = (config.get('api_key') or (api_keys or {}).get(self.provider)
-                        or os.getenv(f"{self.provider.upper()}_API_KEY"))
+                        or os.getenv(f"{self.provider.upper()}_API_KEY")
+                        or (os.getenv("GEMINI_API_KEY") if self.provider == "google" else None))
 
     @contextmanager
     def _completion(self, prompt, system_prompt, **options):
         if self.provider != 'openai':
-            raise ProviderError("Select OpenAI as the cloud provider.")
+            raise ProviderError("Select OpenAI, Anthropic, or Gemini as the cloud provider.")
         if not self.api_key:
-            raise ProviderError("Set OPENAI_API_KEY to use the cloud model.")
+            raise ProviderError("Enter an OpenAI API key in the sidebar or set OPENAI_API_KEY.")
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -49,6 +51,8 @@ class CloudModel:
             on_usage(usage.prompt_tokens, usage.completion_tokens)
 
     def generate(self, prompt, system_prompt=None, *, on_usage=None):
+        if self.provider in ("anthropic", "google"):
+            return generate_byok(self.provider, self.name, self.api_key, prompt, system_prompt, on_usage)
         with self._completion(prompt, system_prompt) as response:
             self._report_usage(response, on_usage)
             answer = response.choices[0].message.content if response.choices else None
@@ -59,6 +63,9 @@ class CloudModel:
             return answer
 
     def stream(self, prompt, system_prompt=None, *, on_usage=None):
+        if self.provider in ("anthropic", "google"):
+            yield self.generate(prompt, system_prompt, on_usage=on_usage)
+            return
         options = {"stream_options": {"include_usage": True}} if on_usage is not None else {}
         finish_reason = None
         has_text = False

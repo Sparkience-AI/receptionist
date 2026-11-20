@@ -9,22 +9,14 @@ from receptionist.metrics import MetricsTracker
 from receptionist.utils import count_tokens
 
 st.set_page_config(page_title="The Receptionist", layout="wide")
-config = load_config()
-cloud_model = config.get("cloud_model", {})
-cloud_model_key = f"{cloud_model.get('provider', 'openai')}/{cloud_model.get('name', 'gpt-4o-mini')}"
+config = dict(load_config())
 cloud_budget_usd = config.get("cloud_budget_usd")
 
 # Initialize session state
 if 'messages' not in st.session_state:
 	st.session_state.messages = []  # each: {role:'user'|'assistant', 'content':str, 'model':'local|cloud', 'label':str}
-if not isinstance(st.session_state.get('usage_metrics'), MetricsTracker):
-	st.session_state.usage_metrics = MetricsTracker(config.get('pricing', {}), cloud_model_key)
 if 'last_classification' not in st.session_state:
 	st.session_state.last_classification = None
-
-metrics = st.session_state.usage_metrics
-budget_reason = metrics.cloud_budget_reason(cloud_budget_usd, cloud_model_key)
-
 
 def usd(value, decimals=4):
 	return f"${value:.{decimals}f}" if value is not None else "Unavailable"
@@ -61,6 +53,38 @@ st.title("The Receptionist")
 st.caption("Each reply uses only the current prompt. Cloud requests also include the configured system instructions. Earlier messages stay in this session.")
 
 with st.sidebar:
+	st.header("Cloud model")
+	providers = {"openai": "OpenAI", "anthropic": "Anthropic", "google": "Gemini"}
+	default_models = {"openai": "gpt-4o-mini", "anthropic": "claude-haiku-4-5", "google": "gemini-2.5-flash"}
+	configured = config.get("cloud_model", {})
+	configured_provider = configured.get("provider", "openai")
+	provider = st.selectbox(
+		"Cloud provider", tuple(providers), format_func=providers.get,
+		index=list(providers).index(configured_provider) if configured_provider in providers else 0,
+	)
+	default_model = (configured.get("name") if configured_provider == provider else None) or default_models[provider]
+	model = st.text_input("Model ID", value=default_model, key=f"model_{provider}").strip() or default_model
+	with st.expander("Bring your own API keys", expanded=True):
+		st.caption("Keys entered here are kept in this session. Leave a field blank to use configured credentials.")
+		keys = {
+			name: st.text_input(f"{label} API key", type="password", key=f"byok_{name}").strip()
+			for name, label in providers.items()
+		}
+	cloud_model = {"provider": provider, "name": model}
+	if keys[provider]:
+		cloud_model["api_key"] = keys[provider]
+	elif provider == configured_provider and configured.get("api_key"):
+		cloud_model["api_key"] = configured["api_key"]
+	config["cloud_model"] = cloud_model
+	cloud_model_key = f"{provider}/{model}"
+	if not isinstance(st.session_state.get("usage_metrics"), MetricsTracker):
+		st.session_state.usage_metrics = MetricsTracker(config.get("pricing", {}), cloud_model_key)
+	metrics = st.session_state.usage_metrics
+	metrics.baseline_model = cloud_model_key
+	budget_reason = metrics.cloud_budget_reason(cloud_budget_usd, cloud_model_key)
+	if provider != "openai":
+		st.caption("This provider returns a complete reply at once.")
+	st.divider()
 	st.header("Dashboard")
 	dash = metrics.get_metrics()
 	st.metric("Local Tokens", dash['local_tokens'])
