@@ -1,6 +1,7 @@
 """Routing logic with structured classification, streaming, and explanation."""
 from __future__ import annotations
 from .classifier import classify, ClassificationResult
+from .models.errors import ProviderError
 from .models.local import LocalModel
 from .models.cloud import CloudModel
 from .config import load_config
@@ -10,7 +11,7 @@ def route_query(prompt: str, config=None, escalate: bool=False, stream: bool=Fal
 	Local Only takes precedence over escalation. Existing callers default to Auto.
 	Returns (model_type, response_or_generator, model_label, classification_dict)
 	model_type: 'local' | 'cloud'
-	response_or_generator: str or generator of str tokens
+	response_or_generator: str, generator of str tokens, or ProviderError for a synchronous failure
 	classification_dict: structured classification result
 	"""
 	if config is None:
@@ -28,7 +29,11 @@ def route_query(prompt: str, config=None, escalate: bool=False, stream: bool=Fal
 		if stream:
 			gen = local.stream(prompt)
 			return 'local', gen, f"Local · {local.name}", cls.to_dict()
-		return 'local', local.generate(prompt), f"Local · {local.name}", cls.to_dict()
+		try:
+			reply = local.generate(prompt)
+		except ProviderError as error:
+			reply = error
+		return 'local', reply, f"Local · {local.name}", cls.to_dict()
 	cloud = CloudModel(config.get('cloud_model', {}), api_keys=config.get('api_keys') or {})
 	model_type, resp, label = _cloud_response(cloud, prompt, config.get('system_prompt'), stream, on_usage)
 	return model_type, resp, label, cls.to_dict()
@@ -38,4 +43,8 @@ def _cloud_response(cloud: CloudModel, prompt: str, system_prompt: str | None, s
 	if stream:
 		gen = cloud.stream(prompt, system_prompt=system_prompt, **usage_option)
 		return 'cloud', gen, f"Cloud · {cloud.name}"
-	return 'cloud', cloud.generate(prompt, system_prompt=system_prompt, **usage_option), f"Cloud · {cloud.name}"
+	try:
+		reply = cloud.generate(prompt, system_prompt=system_prompt, **usage_option)
+	except ProviderError as error:
+		reply = error
+	return 'cloud', reply, f"Cloud · {cloud.name}"

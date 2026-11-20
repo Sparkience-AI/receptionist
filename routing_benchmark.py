@@ -7,6 +7,7 @@ from time import perf_counter
 from unittest.mock import patch
 
 from receptionist.config import load_config
+from receptionist.models.errors import ProviderError
 from receptionist.models.cloud import CloudModel
 from receptionist.models.local import LocalModel
 from receptionist.router import route_query
@@ -56,7 +57,7 @@ def evaluate(config, split):
                 # Providers can raise before a response is returned.
                 provider, reply = None, ""
             elapsed = (perf_counter() - start) * 1000
-            failed = not reply.strip() or reply.startswith((
+            failed = isinstance(reply, ProviderError) or not reply.strip() or reply.startswith((
                 "[Local ", "[Ollama ", "[OpenAI ", "[Provider ", "[Streaming ",
             ))
             passed = not failed and all(re.search(p, reply, re.I) for p in patterns)

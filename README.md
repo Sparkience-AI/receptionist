@@ -26,7 +26,7 @@ Use the first baseline run to set a minimum acceptable answer pass rate, minimum
 ## ✨ Key Features
 * Heuristic safety & complexity classifier (no heavy deps) decides local vs cloud.
 * One-shot cloud override for user-controlled escalation.
-* Unified routing layer with streaming support (OpenAI implemented; graceful fallbacks otherwise).
+* OpenAI streaming and buffered Ollama output with original formatting. Provider failures appear in chat with the selected model, and partial output stays visible.
 * Native Streamlit `st.chat_message` interface + high-contrast custom theme (`.streamlit/config.toml`).
 * Estimated cloud spend and savings versus the configured cloud model.
 * Model provenance badges (Local · model / Cloud · model) inline with each answer.
@@ -95,6 +95,7 @@ system_prompt: >
 ```
 
 ## 📊 Metrics Logic
+* Failed requests with reported usage still count toward spend. Partial replies without provider usage use estimates. Failures without usage or output are excluded from estimates.
 * Cloud usage uses OpenAI token counts when available, including streaming usage. Other usage falls back to separate word-count estimates for input and output. Estimated cloud input includes the system prompt.
 * Spend uses the configured rates. A model can use a flat `per_1k` rate or separate `input_per_1k` and `output_per_1k` rates. Missing pricing is shown as unavailable.
 * The all-cloud baseline prices the recorded input and output counts at the configured cloud model's rates. It estimates routing savings for the same recorded workload, so it does not predict how another model would tokenize or answer a locally handled request.

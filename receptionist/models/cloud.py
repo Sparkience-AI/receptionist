@@ -1,69 +1,81 @@
-"""Cloud model abstraction with basic multi-provider support & streaming.
-
-Currently implemented providers: openai (others return stub message).
-Add keys via environment variables or config api_keys.
-"""
+"""OpenAI generation and streaming with optional usage reporting."""
 from __future__ import annotations
+
 import os
-from typing import Iterable, Generator, Dict, Any
+from contextlib import contextmanager
+
+from httpx import HTTPError
+from openai import APITimeoutError, AuthenticationError, NotFoundError, OpenAIError, RateLimitError
 from openai import OpenAI as OpenAIClient
 
+from .errors import ProviderError
 
-SUPPORTED_PREVIEW_MODELS = {"gpt-5-preview"}
 
 class CloudModel:
-	def __init__(self, config: Dict[str, Any], api_keys: Dict[str,str] | None = None):
-		self.name = config.get('name', 'gpt-4o-mini')
-		self.provider = config.get('provider', 'openai')
-		self.api_keys = api_keys or {}
-		# Resolve key precedence: explicit config api_key -> api_keys mapping -> env var
-		explicit = config.get('api_key')
-		if explicit:
-			self.api_key = explicit
-		else:
-			self.api_key = self.api_keys.get(self.provider) or os.getenv(f"{self.provider.upper()}_API_KEY")
+    def __init__(self, config, api_keys=None):
+        self.name = config.get('name', 'gpt-4o-mini')
+        self.provider = config.get('provider', 'openai')
+        self.api_key = (config.get('api_key') or (api_keys or {}).get(self.provider)
+                        or os.getenv(f"{self.provider.upper()}_API_KEY"))
 
-	def generate(self, prompt: str, system_prompt: str | None = None, *, on_usage=None) -> str:
-		if self.provider == 'openai':
-			if OpenAIClient is None:
-				return "[OpenAI client not installed]"
-			client = OpenAIClient(api_key=self.api_key)
-			messages = []
-			if system_prompt:
-				messages.append({"role":"system","content":system_prompt})
-			messages.append({"role":"user","content":prompt})
-			try:
-				resp = client.chat.completions.create(model=self.name, messages=messages)
-				usage = getattr(resp, 'usage', None)
-				if on_usage is not None and usage is not None:
-					on_usage(usage.prompt_tokens, usage.completion_tokens)
-				return resp.choices[0].message.content.strip()
-			except Exception as e:
-				return f"[OpenAI error: {e}]"
-		return f"[Provider {self.provider} not yet implemented]"
+    @contextmanager
+    def _completion(self, prompt, system_prompt, **options):
+        if self.provider != 'openai':
+            raise ProviderError("Select OpenAI as the cloud provider.")
+        if not self.api_key:
+            raise ProviderError("Set OPENAI_API_KEY to use the cloud model.")
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+        try:
+            client = OpenAIClient(api_key=self.api_key, timeout=45.0, max_retries=0)
+            yield client.chat.completions.create(model=self.name, messages=messages, **options)
+        except AuthenticationError:
+            raise ProviderError("OpenAI rejected the credentials. Check OPENAI_API_KEY.") from None
+        except NotFoundError:
+            raise ProviderError("OpenAI could not find the configured model. Check its name and access.") from None
+        except RateLimitError:
+            raise ProviderError("OpenAI rate limit or quota reached. Check your quota or try again later.") from None
+        except APITimeoutError:
+            raise ProviderError("OpenAI timed out. Try again.") from None
+        except (OpenAIError, HTTPError, OSError):
+            raise ProviderError("The OpenAI request failed. Check the connection or try again.") from None
 
-	def stream(self, prompt: str, system_prompt: str | None = None, *, on_usage=None) -> Generator[str,None,None]:
-		if self.provider == 'openai':
-			if OpenAIClient is None:
-				yield "[OpenAI client not installed]"
-				return
-			client = OpenAIClient(api_key=self.api_key)
-			messages = []
-			if system_prompt:
-				messages.append({"role":"system","content":system_prompt})
-			messages.append({"role":"user","content":prompt})
-			try:
-				stream = client.chat.completions.create(model=self.name, messages=messages, stream=True, **({"stream_options": {"include_usage": True}} if on_usage is not None else {}))
-				for chunk in stream:
-					usage = getattr(chunk, 'usage', None)
-					if on_usage is not None and usage is not None:
-						on_usage(usage.prompt_tokens, usage.completion_tokens)
-					if not chunk.choices:
-						continue
-					delta = chunk.choices[0].delta.content or ""
-					if delta:
-						yield delta
-			except Exception as e:
-				yield f"[OpenAI stream error: {e}]"
-			return
-		yield f"[Streaming not supported for provider {self.provider}]"
+    @staticmethod
+    def _report_usage(response, on_usage):
+        usage = getattr(response, 'usage', None)
+        if on_usage is not None and usage is not None:
+            on_usage(usage.prompt_tokens, usage.completion_tokens)
+
+    def generate(self, prompt, system_prompt=None, *, on_usage=None):
+        with self._completion(prompt, system_prompt) as response:
+            self._report_usage(response, on_usage)
+            answer = response.choices[0].message.content if response.choices else None
+            if not answer or not answer.strip():
+                raise ProviderError("OpenAI returned an empty response. Try again.")
+            if response.choices[0].finish_reason in ('length', 'content_filter'):
+                raise ProviderError('OpenAI stopped before completing the response.', partial=answer)
+            return answer
+
+    def stream(self, prompt, system_prompt=None, *, on_usage=None):
+        options = {"stream_options": {"include_usage": True}} if on_usage is not None else {}
+        finish_reason = None
+        has_text = False
+        with self._completion(prompt, system_prompt, stream=True, **options) as stream:
+            for chunk in stream:
+                self._report_usage(chunk, on_usage)
+                if not chunk.choices:
+                    continue
+                choice = chunk.choices[0]
+                if choice.finish_reason is not None:
+                    finish_reason = choice.finish_reason
+                if choice.delta.content:
+                    has_text = has_text or bool(choice.delta.content.strip())
+                    yield choice.delta.content
+        if finish_reason is None:
+            raise ProviderError("The OpenAI stream ended early. Try again.")
+        if finish_reason in ('length', 'content_filter'):
+            raise ProviderError('OpenAI stopped before completing the response.')
+        if not has_text:
+            raise ProviderError("OpenAI returned an empty response. Try again.")

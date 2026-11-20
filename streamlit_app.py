@@ -2,6 +2,7 @@
 import streamlit as st
 from receptionist.config import load_config
 from receptionist.router import route_query
+from receptionist.models.errors import ProviderError
 from receptionist.metrics import MetricsTracker
 from receptionist.utils import count_tokens
 
@@ -77,7 +78,12 @@ with st.sidebar:
 for m in st.session_state.messages:
 	with st.chat_message(m['role'], avatar="🧑" if m['role']=='user' else ("☁️" if m['model']=='cloud' else "💻")):
 		badge = f"`{m['label']}`"
-		st.markdown(f"{badge}  \n{m['content']}")
+		st.markdown(badge)
+		if m['content']:
+			st.markdown(m['content'])
+		if m.get('error'):
+			status = "Partial response" if m['content'].strip() else "Request failed"
+			st.error(f"{status}: {m['error']}")
 
 def consume_cloud_override():
 	st.session_state.cloud_override = st.session_state.send_to_cloud
@@ -103,17 +109,27 @@ if user_input:
 	)
 	# Assistant message container
 	with st.chat_message('assistant', avatar=("☁️" if model_type=='cloud' else "💻")):
-		badge = f"**{label}**"
-		if streaming and hasattr(resp_obj, '__iter__') and not isinstance(resp_obj, str):
-			placeholder = st.empty()
-			collected = ''
-			for chunk in resp_obj:
-				collected += chunk
-				placeholder.markdown(f"{badge}\n\n{collected}")
-			response_text = collected.strip()
-		else:
-			response_text = resp_obj if isinstance(resp_obj, str) else ''.join(list(resp_obj))
-			st.markdown(f"{badge}\n\n{response_text}")
+		st.markdown(f"**{label}**")
+		response_text = ""
+		failure = None
+		try:
+			if isinstance(resp_obj, ProviderError):
+				raise resp_obj
+			if isinstance(resp_obj, str):
+				response_text = resp_obj
+				st.markdown(response_text)
+			else:
+				placeholder = st.empty()
+				for chunk in resp_obj:
+					response_text += chunk
+					placeholder.markdown(response_text)
+		except ProviderError as error:
+			if error.partial:
+				response_text = error.partial
+				st.markdown(response_text)
+			failure = str(error)
+			status = "Partial response" if response_text.strip() else "Request failed"
+			st.error(f"{status}: {failure}")
 		with st.expander("Routing Details", expanded=False):
 			st.json(cls)
 	# Metrics
@@ -122,7 +138,8 @@ if user_input:
 	input_tokens, output_tokens = usage or [
 		count_tokens(user_input) + count_tokens(system_prompt), count_tokens(response_text),
 	]
-	metrics.record(model_type, model_key, input_tokens, output_tokens, estimated=not usage)
-	st.session_state.messages.append({'role':'assistant','content':response_text,'model':model_type,'label':label,'classification':cls})
+	if failure is None or usage or response_text.strip():
+		metrics.record(model_type, model_key, input_tokens, output_tokens, estimated=not usage)
+	st.session_state.messages.append({'role':'assistant','content':response_text,'model':model_type,'label':label,'classification':cls,'error':failure})
 	st.session_state.last_classification = cls
 	st.rerun()
