@@ -82,8 +82,6 @@ with st.sidebar:
 	metrics = st.session_state.usage_metrics
 	metrics.baseline_model = cloud_model_key
 	budget_reason = metrics.cloud_budget_reason(cloud_budget_usd, cloud_model_key)
-	if provider != "openai":
-		st.caption("This provider returns a complete reply at once.")
 	st.divider()
 	st.header("Dashboard")
 	dash = metrics.get_metrics()

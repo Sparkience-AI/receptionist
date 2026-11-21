@@ -9,6 +9,7 @@ from openai import APITimeoutError, AuthenticationError, NotFoundError, OpenAIEr
 from openai import OpenAI as OpenAIClient
 
 from .byok import generate as generate_byok
+from .byok import stream as stream_byok
 from .errors import ProviderError
 
 
@@ -64,7 +65,7 @@ class CloudModel:
 
     def stream(self, prompt, system_prompt=None, *, on_usage=None):
         if self.provider in ("anthropic", "google"):
-            yield self.generate(prompt, system_prompt, on_usage=on_usage)
+            yield from stream_byok(self.provider, self.name, self.api_key, prompt, system_prompt, on_usage)
             return
         options = {"stream_options": {"include_usage": True}} if on_usage is not None else {}
         finish_reason = None

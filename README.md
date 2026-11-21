@@ -36,7 +36,7 @@ Open the URL Streamlit prints. Leave the sidebar set to **Local Only** and try â
 
 For cloud use, select OpenAI, Anthropic, or Gemini and enter a model ID and API key in the sidebar. Keys entered there last for the current Streamlit session. You can also set `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GOOGLE_API_KEY` in the environment before launching. Gemini also accepts `GEMINI_API_KEY` through the environment. An entered key overrides the configured credential for that provider.
 
-Cloud requests send the current prompt and the configured system instructions. Earlier messages stay visible in the current session and are excluded from the request. OpenAI streams text when **Stream Responses** is on. Ollama, Anthropic, and Gemini return complete replies at once.
+Cloud requests send the current prompt and the configured system instructions. Earlier messages stay visible in the current session and are excluded from the request. OpenAI, Anthropic, and Gemini stream text when **Stream Responses** is on. Ollama returns a complete reply at once.
 
 ## Configure models and spending
 
