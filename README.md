@@ -1,5 +1,7 @@
 # The Receptionist
 
+![The Receptionist cover, showing a red waveform splitting into local and cloud routes](assets/receptionist-cover.jpg)
+
 The Receptionist runs developer prompts through Ollama on your machine or sends them to a cloud model you choose. It starts in **Local Only**. Each reply shows which model handled the request, why it took that route, how long it took, and the estimated cloud cost.
 
 ## Run locally
