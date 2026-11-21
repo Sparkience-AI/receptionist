@@ -1,0 +1,39 @@
+{
+  "mode": "live",
+  "split": "holdout",
+  "cloud_model": "openai/gpt-6-luna",
+  "local_model": "gemma2:2b",
+  "routing_threshold_overrides": {
+    "escalate_score_threshold": 0.16,
+    "max_local_words": 8
+  },
+  "results": {
+    "auto": [
+      {"case_id": "python-default", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 2474.3395999539644, "estimated_cost_usd": 8.9e-05, "provider_usage_reported": true, "routing_reason": "score >= boundary"},
+      {"case_id": "git-branch", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 1332.4306000722572, "estimated_cost_usd": 2.86e-05, "provider_usage_reported": true, "routing_reason": "length override"},
+      {"case_id": "python-alias", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 2189.9655000306666, "estimated_cost_usd": 9.11e-05, "provider_usage_reported": true, "routing_reason": "score >= boundary"},
+      {"case_id": "git-log", "route": "local", "provider_error": false, "passed": false, "latency_ms": 27367.629599990323, "estimated_cost_usd": 0.0, "provider_usage_reported": false, "routing_reason": "score < boundary"},
+      {"case_id": "git-ignore", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 977.6837000390515, "estimated_cost_usd": 1.62e-05, "provider_usage_reported": true, "routing_reason": "score >= boundary"},
+      {"case_id": "git-revert", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 1531.2079000286758, "estimated_cost_usd": 3.19e-05, "provider_usage_reported": true, "routing_reason": "score >= boundary"},
+      {"case_id": "py-sort", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 1547.4212000845, "estimated_cost_usd": 3.42e-05, "provider_usage_reported": true, "routing_reason": "length override"},
+      {"case_id": "py-with", "route": "local", "provider_error": true, "passed": false, "latency_ms": 45029.22319993377, "estimated_cost_usd": 0.0, "provider_usage_reported": false, "routing_reason": "score < boundary"},
+      {"case_id": "py-key", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 1298.6276999581605, "estimated_cost_usd": 2.04e-05, "provider_usage_reported": true, "routing_reason": "score >= boundary"},
+      {"case_id": "py-closure", "route": "cloud", "provider_error": false, "passed": false, "latency_ms": 3186.4963000407442, "estimated_cost_usd": 0.0001304, "provider_usage_reported": true, "routing_reason": "score >= boundary"},
+      {"case_id": "py-import", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 1385.4151999112219, "estimated_cost_usd": 2.98e-05, "provider_usage_reported": true, "routing_reason": "score >= boundary"},
+      {"case_id": "py-exit", "route": "local", "provider_error": false, "passed": true, "latency_ms": 33013.02770001348, "estimated_cost_usd": 0.0, "provider_usage_reported": false, "routing_reason": "score < boundary"},
+      {"case_id": "sql-unique", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 1216.7007999960333, "estimated_cost_usd": 1.76e-05, "provider_usage_reported": true, "routing_reason": "length override"},
+      {"case_id": "sql-foreign", "route": "local", "provider_error": true, "passed": false, "latency_ms": 45021.60679991357, "estimated_cost_usd": 0.0, "provider_usage_reported": false, "routing_reason": "score < boundary"},
+      {"case_id": "sql-index", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 2086.6213000845164, "estimated_cost_usd": 4.45e-05, "provider_usage_reported": true, "routing_reason": "score >= boundary"},
+      {"case_id": "sql-left-filter", "route": "cloud", "provider_error": false, "passed": false, "latency_ms": 2327.721699955873, "estimated_cost_usd": 8.96e-05, "provider_usage_reported": true, "routing_reason": "length override"},
+      {"case_id": "http-retry-post", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 3086.44640003331, "estimated_cost_usd": 0.0001107, "provider_usage_reported": true, "routing_reason": "score >= boundary"},
+      {"case_id": "http-type", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 1290.1905999751762, "estimated_cost_usd": 3.07e-05, "provider_usage_reported": true, "routing_reason": "score >= boundary"},
+      {"case_id": "http-head", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 1318.345700041391, "estimated_cost_usd": 2.42e-05, "provider_usage_reported": true, "routing_reason": "score >= boundary"},
+      {"case_id": "cli-find", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 1486.1613000975922, "estimated_cost_usd": 4.06e-05, "provider_usage_reported": true, "routing_reason": "length override"},
+      {"case_id": "cli-env", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 973.8108000019565, "estimated_cost_usd": 1.48e-05, "provider_usage_reported": true, "routing_reason": "score >= boundary"},
+      {"case_id": "cli-curl", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 1474.231099942699, "estimated_cost_usd": 4.12e-05, "provider_usage_reported": true, "routing_reason": "score >= boundary"},
+      {"case_id": "debug-deadlock", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 1081.460899906233, "estimated_cost_usd": 2.04e-05, "provider_usage_reported": true, "routing_reason": "score >= boundary"},
+      {"case_id": "debug-read-modify-write", "route": "cloud", "provider_error": false, "passed": false, "latency_ms": 2553.3134000143036, "estimated_cost_usd": 9.14e-05, "provider_usage_reported": true, "routing_reason": "score >= boundary"},
+      {"case_id": "test-fixture", "route": "cloud", "provider_error": false, "passed": true, "latency_ms": 1606.3211999135092, "estimated_cost_usd": 3.68e-05, "provider_usage_reported": true, "routing_reason": "score >= boundary"}
+    ]
+  }
+}

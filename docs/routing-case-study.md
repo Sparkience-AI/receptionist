@@ -37,8 +37,18 @@ A reply passed when it contained all the expected terms or patterns for that pro
 
 ## What I kept
 
-I tuned the score cutoff and word limit on 75 development prompts. On a later live run of the 25 held-out prompts with Iris Xe enabled, tuned Auto passed **19/25**, compared with **11/25** for original Auto and **21/25** for all-cloud in the earlier run. Tuned Auto called the cloud 21 times and saved about 6% in estimated cloud API cost. Two local timeouts still put p95 at 45.02 s. The runs used different local compute setups, so the improvement can't be attributed to tuning alone. An offline learned candidate chose cloud for every holdout prompt.
+I tuned the score cutoff and word limit on 75 development prompts. On a later live run of the 25 held-out prompts with Iris Xe enabled, tuned Auto passed **19/25**, compared with **11/25** for original Auto and **21/25** for all-cloud in the earlier run. Tuned Auto called the cloud 21 times and spent an estimated **$0.001034**, about 6% less than the earlier all-cloud run on those same 25 prompts (**$0.001100**). The original Auto comparison used CPU-only Ollama, while tuned Auto ran with Iris Xe enabled. That change makes it hard to isolate the effect of tuning. Two local timeouts still put tuned Auto’s p95 at 45.02 s. An offline learned candidate chose cloud for every holdout prompt.
 
-I kept **Local Only** as the default, left **Auto** opt-in, and kept the tuned settings in the benchmark. On this laptop, even a correct local answer can take longer than a cloud call. I’d revisit Auto after testing a faster local setup, then judge the router on fresh prompts using answer checks, p95, and cloud spend together.
+I kept **Local Only** as the default so prompts stay on the user’s machine until they choose a cloud-capable mode or explicitly send a prompt to the cloud. All-cloud was faster and passed more checks on this laptop. Auto remains opt-in, and the tuned settings stay in the benchmark. I’d revisit Auto after testing a faster local setup, then judge the router on fresh prompts using answer checks, p95, and cloud spend together.
 
-To repeat the comparison, set the models above in your config and run `python routing_benchmark.py --live --split all --report benchmark-results.json`. Live runs can incur API charges. [Benchmark runner](../routing_benchmark.py) · [Prompts and answer checks](../routing_benchmark_cases.json)
+To repeat the comparison, set the models above in your config and run `python routing_benchmark.py --live --split all --report benchmark-results.json`. Live runs can incur API charges.
+
+[CPU baseline report](benchmark-reports/cpu-baseline.json) · [Iris Xe holdout report](benchmark-reports/iris-xe-holdout.json)
+
+The local runner and fixture files match the versions pinned here. The reports don't record the full checkout or runtime config.
+
+| Run | Pinned benchmark source |
+| --- | --- |
+| CPU baseline | [Runner at `72c18e4`](https://github.com/Sparkience-AI/receptionist/blob/72c18e4cd2dee4a187fa6303a2e755aee9bb6c5d/routing_benchmark.py) |
+| Iris Xe holdout | [Runner at `83cfc01`](https://github.com/Sparkience-AI/receptionist/blob/83cfc01ed547629dc435884b4e1bfbcae8a4090f/routing_benchmark.py) |
+| Both runs | [Shared prompt fixtures](https://github.com/Sparkience-AI/receptionist/blob/83cfc01ed547629dc435884b4e1bfbcae8a4090f/routing_benchmark_cases.json). The runners define the first eight cases. |
