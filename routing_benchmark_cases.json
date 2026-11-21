@@ -1,0 +1,841 @@
+[
+  {
+    "id": "git-diff",
+    "split": "dev",
+    "prompt": "Which Git command shows unstaged changes?",
+    "patterns": [
+      "\\bgit diff\\b"
+    ],
+    "smoke": "git diff"
+  },
+  {
+    "id": "git-stage",
+    "split": "dev",
+    "prompt": "What command stages only app.py in Git?",
+    "patterns": [
+      "\\bgit add app\\.py\\b"
+    ],
+    "smoke": "git add app.py"
+  },
+  {
+    "id": "git-rewrite-recovery",
+    "split": "dev",
+    "prompt": "After a rebase, a local branch no longer points to a commit you need and you have not garbage-collected. What Git log helps locate the prior branch tip?",
+    "patterns": [
+      "\\breflog\\b"
+    ],
+    "smoke": "reflog"
+  },
+  {
+    "id": "git-log",
+    "split": "holdout",
+    "prompt": "Which Git command shows one commit per line?",
+    "patterns": [
+      "\\bgit log --oneline\\b"
+    ],
+    "smoke": "git log --oneline"
+  },
+  {
+    "id": "git-remote",
+    "split": "dev",
+    "prompt": "Which command lists Git remote URLs?",
+    "patterns": [
+      "\\bgit remote -v\\b"
+    ],
+    "smoke": "git remote -v"
+  },
+  {
+    "id": "git-stash",
+    "split": "dev",
+    "prompt": "Which Git command temporarily puts tracked working changes aside?",
+    "patterns": [
+      "\\bgit stash\\b"
+    ],
+    "smoke": "git stash"
+  },
+  {
+    "id": "git-branch-create",
+    "split": "dev",
+    "prompt": "Which command creates and switches to a new branch called feature?",
+    "patterns": [
+      "\\bgit switch -c feature\\b"
+    ],
+    "smoke": "git switch -c feature"
+  },
+  {
+    "id": "git-ignore",
+    "split": "holdout",
+    "prompt": "Which file lists patterns Git should ignore in a repository?",
+    "patterns": [
+      "\\.gitignore\\b"
+    ],
+    "smoke": ".gitignore"
+  },
+  {
+    "id": "git-head",
+    "split": "dev",
+    "prompt": "What does HEAD normally refer to in Git?",
+    "patterns": [
+      "\\bcurrent branch\\b",
+      "\\bcommit\\b"
+    ],
+    "smoke": "current branch commit"
+  },
+  {
+    "id": "git-fetch",
+    "split": "dev",
+    "prompt": "Which Git operation downloads remote changes without integrating them?",
+    "patterns": [
+      "\\bfetch\\b"
+    ],
+    "smoke": "fetch"
+  },
+  {
+    "id": "git-conflict",
+    "split": "dev",
+    "prompt": "What command lists unmerged paths during a merge conflict?",
+    "patterns": [
+      "\\bgit status\\b"
+    ],
+    "smoke": "git status"
+  },
+  {
+    "id": "git-revert",
+    "split": "holdout",
+    "prompt": "Which Git command makes a new commit undoing an earlier commit?",
+    "patterns": [
+      "\\bgit revert\\b"
+    ],
+    "smoke": "git revert"
+  },
+  {
+    "id": "py-venv",
+    "split": "dev",
+    "prompt": "What Python command creates a virtual environment named .venv?",
+    "patterns": [
+      "\\bpython -m venv \\.venv\\b"
+    ],
+    "smoke": "python -m venv .venv"
+  },
+  {
+    "id": "py-pip",
+    "split": "dev",
+    "prompt": "Which command installs packages listed in requirements.txt?",
+    "patterns": [
+      "\\bpip install -r requirements\\.txt\\b"
+    ],
+    "smoke": "pip install -r requirements.txt"
+  },
+  {
+    "id": "py-enumerate",
+    "split": "dev",
+    "prompt": "Which Python builtin yields index-value pairs while iterating?",
+    "patterns": [
+      "\\benumerate\\b"
+    ],
+    "smoke": "enumerate"
+  },
+  {
+    "id": "py-sort",
+    "split": "holdout",
+    "prompt": "What is the default return value of Python list.sort()?",
+    "patterns": [
+      "\\bNone\\b"
+    ],
+    "smoke": "None"
+  },
+  {
+    "id": "py-tuple",
+    "split": "dev",
+    "prompt": "Which punctuation makes (1,) a one-element tuple?",
+    "patterns": [
+      "\\bcomma\\b"
+    ],
+    "smoke": "comma"
+  },
+  {
+    "id": "py-dict",
+    "split": "dev",
+    "prompt": "Which dict method supports a default if a key is missing?",
+    "patterns": [
+      "\\bget\\b"
+    ],
+    "smoke": "get"
+  },
+  {
+    "id": "py-set",
+    "split": "dev",
+    "prompt": "Which built-in collection stores unique elements without indexing?",
+    "patterns": [
+      "\\bset\\b"
+    ],
+    "smoke": "set"
+  },
+  {
+    "id": "py-with",
+    "split": "holdout",
+    "prompt": "What Python protocol does a with statement use?",
+    "patterns": [
+      "\\bcontext manager\\b"
+    ],
+    "smoke": "context manager"
+  },
+  {
+    "id": "py-gen",
+    "split": "dev",
+    "prompt": "Which Python keyword makes a function a generator?",
+    "patterns": [
+      "\\byield\\b"
+    ],
+    "smoke": "yield"
+  },
+  {
+    "id": "py-catch",
+    "split": "dev",
+    "prompt": "Which exception is raised by int(\"hello\")?",
+    "patterns": [
+      "\\bValueError\\b"
+    ],
+    "smoke": "ValueError"
+  },
+  {
+    "id": "py-index",
+    "split": "dev",
+    "prompt": "Which exception is raised by [1][5]?",
+    "patterns": [
+      "\\bIndexError\\b"
+    ],
+    "smoke": "IndexError"
+  },
+  {
+    "id": "py-key",
+    "split": "holdout",
+    "prompt": "Which exception does a dict raise when you index a missing key?",
+    "patterns": [
+      "\\bKeyError\\b"
+    ],
+    "smoke": "KeyError"
+  },
+  {
+    "id": "py-json",
+    "split": "dev",
+    "prompt": "Which Python json function parses a JSON string?",
+    "patterns": [
+      "\\bloads\\b"
+    ],
+    "smoke": "loads"
+  },
+  {
+    "id": "py-copy",
+    "split": "dev",
+    "prompt": "Why does a shallow copy still share its nested lists?",
+    "patterns": [
+      "\\breference\\b"
+    ],
+    "smoke": "reference"
+  },
+  {
+    "id": "py-unicode",
+    "split": "dev",
+    "prompt": "A string appears to contain one accented letter but len() returns two. Explain how this is possible and name a normalization form that can compose it.",
+    "patterns": [
+      "\\bcombining\\b",
+      "\\bNFC\\b"
+    ],
+    "smoke": "combining NFC"
+  },
+  {
+    "id": "py-closure",
+    "split": "holdout",
+    "prompt": "Why do callbacks created inside a Python for loop all read the final loop value when invoked later, and how can a default argument fix it?",
+    "patterns": [
+      "\\blate binding\\b",
+      "\\bdefault argument\\b"
+    ],
+    "smoke": "late binding default argument"
+  },
+  {
+    "id": "py-finally",
+    "split": "dev",
+    "prompt": "Which try-statement block runs during cleanup even after an exception?",
+    "patterns": [
+      "\\bfinally\\b"
+    ],
+    "smoke": "finally"
+  },
+  {
+    "id": "py-dataclass",
+    "split": "dev",
+    "prompt": "Which Python decorator generates an initializer from class field annotations?",
+    "patterns": [
+      "\\bdataclass\\b"
+    ],
+    "smoke": "dataclass"
+  },
+  {
+    "id": "py-equality",
+    "split": "dev",
+    "prompt": "What does Python is compare?",
+    "patterns": [
+      "\\bidentity\\b"
+    ],
+    "smoke": "identity"
+  },
+  {
+    "id": "py-import",
+    "split": "holdout",
+    "prompt": "What value does __name__ have when a Python file runs as the entry point?",
+    "patterns": [
+      "\\b__main__\\b"
+    ],
+    "smoke": "__main__"
+  },
+  {
+    "id": "py-async-block",
+    "split": "dev",
+    "prompt": "An asyncio handler calls time.sleep(2) and unrelated requests pause. Explain why and name the appropriate awaitable replacement.",
+    "patterns": [
+      "\\bevent loop\\b",
+      "\\basyncio\\.sleep\\b"
+    ],
+    "smoke": "event loop asyncio.sleep"
+  },
+  {
+    "id": "py-split",
+    "split": "dev",
+    "prompt": "What Python str method separates text into a list using a delimiter?",
+    "patterns": [
+      "\\bsplit\\b"
+    ],
+    "smoke": "split"
+  },
+  {
+    "id": "py-join",
+    "split": "dev",
+    "prompt": "What string method joins iterable strings using a separator?",
+    "patterns": [
+      "\\bjoin\\b"
+    ],
+    "smoke": "join"
+  },
+  {
+    "id": "py-exit",
+    "split": "holdout",
+    "prompt": "What zero process exit code conventionally indicates?",
+    "patterns": [
+      "\\bsuccess\\b"
+    ],
+    "smoke": "success"
+  },
+  {
+    "id": "sql-order",
+    "split": "dev",
+    "prompt": "Which SQL clause sorts query results?",
+    "patterns": [
+      "\\bORDER BY\\b"
+    ],
+    "smoke": "ORDER BY"
+  },
+  {
+    "id": "sql-filter",
+    "split": "dev",
+    "prompt": "Which SQL clause filters rows before grouping?",
+    "patterns": [
+      "\\bWHERE\\b"
+    ],
+    "smoke": "WHERE"
+  },
+  {
+    "id": "sql-having",
+    "split": "dev",
+    "prompt": "Which SQL clause filters groups after aggregation?",
+    "patterns": [
+      "\\bHAVING\\b"
+    ],
+    "smoke": "HAVING"
+  },
+  {
+    "id": "sql-unique",
+    "split": "holdout",
+    "prompt": "Which SQL keyword removes duplicate result rows from SELECT?",
+    "patterns": [
+      "\\bDISTINCT\\b"
+    ],
+    "smoke": "DISTINCT"
+  },
+  {
+    "id": "sql-count",
+    "split": "dev",
+    "prompt": "Which SQL aggregate counts all rows including those with NULL values?",
+    "patterns": [
+      "\\bCOUNT\\(\\*\\)"
+    ],
+    "smoke": "COUNT(*)"
+  },
+  {
+    "id": "sql-not-null",
+    "split": "dev",
+    "prompt": "Which column constraint rejects SQL NULL values?",
+    "patterns": [
+      "\\bNOT NULL\\b"
+    ],
+    "smoke": "NOT NULL"
+  },
+  {
+    "id": "sql-primary",
+    "split": "dev",
+    "prompt": "Which key uniquely identifies rows in a table?",
+    "patterns": [
+      "\\bprimary key\\b"
+    ],
+    "smoke": "primary key"
+  },
+  {
+    "id": "sql-foreign",
+    "split": "holdout",
+    "prompt": "Which key enforces references to another table's key?",
+    "patterns": [
+      "\\bforeign key\\b"
+    ],
+    "smoke": "foreign key"
+  },
+  {
+    "id": "sql-rollback",
+    "split": "dev",
+    "prompt": "Which SQL statement undoes uncommitted changes?",
+    "patterns": [
+      "\\bROLLBACK\\b"
+    ],
+    "smoke": "ROLLBACK"
+  },
+  {
+    "id": "sql-commit",
+    "split": "dev",
+    "prompt": "Which SQL statement saves a transaction?",
+    "patterns": [
+      "\\bCOMMIT\\b"
+    ],
+    "smoke": "COMMIT"
+  },
+  {
+    "id": "sql-left",
+    "split": "dev",
+    "prompt": "Which join keeps every row from the left table even without a match?",
+    "patterns": [
+      "\\bLEFT JOIN\\b"
+    ],
+    "smoke": "LEFT JOIN"
+  },
+  {
+    "id": "sql-index",
+    "split": "holdout",
+    "prompt": "What database structure can speed lookups at the cost of write work?",
+    "patterns": [
+      "\\bindex\\b"
+    ],
+    "smoke": "index"
+  },
+  {
+    "id": "sql-group",
+    "split": "dev",
+    "prompt": "Which SQL clause partitions rows for grouped aggregate results?",
+    "patterns": [
+      "\\bGROUP BY\\b"
+    ],
+    "smoke": "GROUP BY"
+  },
+  {
+    "id": "sql-count-null",
+    "split": "dev",
+    "prompt": "After a LEFT JOIN, a parent with no children gets a count of one from COUNT(*). Which count expression should be used and why?",
+    "patterns": [
+      "\\bCOUNT\\b",
+      "\\bNULL\\b"
+    ],
+    "smoke": "COUNT NULL"
+  },
+  {
+    "id": "sql-union",
+    "split": "dev",
+    "prompt": "Which SQL operator combines sets without removing duplicate rows?",
+    "patterns": [
+      "\\bUNION ALL\\b"
+    ],
+    "smoke": "UNION ALL"
+  },
+  {
+    "id": "sql-left-filter",
+    "split": "holdout",
+    "prompt": "A LEFT JOIN stops returning unmatched left rows after adding WHERE right.active = 1. Explain why and where to put the predicate to preserve unmatched rows.",
+    "patterns": [
+      "\\bNULL\\b",
+      "\\bON clause\\b"
+    ],
+    "smoke": "NULL ON clause"
+  },
+  {
+    "id": "http-created",
+    "split": "dev",
+    "prompt": "Which HTTP status code means a resource was created?",
+    "patterns": [
+      "\\b201\\b"
+    ],
+    "smoke": "201"
+  },
+  {
+    "id": "http-empty",
+    "split": "dev",
+    "prompt": "Which HTTP success code has no response body?",
+    "patterns": [
+      "\\b204\\b"
+    ],
+    "smoke": "204"
+  },
+  {
+    "id": "http-auth",
+    "split": "dev",
+    "prompt": "Which HTTP status code signals missing or invalid authentication?",
+    "patterns": [
+      "\\b401\\b"
+    ],
+    "smoke": "401"
+  },
+  {
+    "id": "http-retry-post",
+    "split": "holdout",
+    "prompt": "A client times out on a POST that creates an invoice. How can it retry without creating a duplicate if the API supports it?",
+    "patterns": [
+      "\\bidempotency key\\b"
+    ],
+    "smoke": "idempotency key"
+  },
+  {
+    "id": "http-lost-update",
+    "split": "dev",
+    "prompt": "Two clients read the same resource version and submit writes. Which conditional request header and validator prevent the second write from silently overwriting the first?",
+    "patterns": [
+      "\\bIf-Match\\b",
+      "\\bETag\\b"
+    ],
+    "smoke": "If-Match ETag"
+  },
+  {
+    "id": "http-ratelimit",
+    "split": "dev",
+    "prompt": "Which HTTP status code means too many requests?",
+    "patterns": [
+      "\\b429\\b"
+    ],
+    "smoke": "429"
+  },
+  {
+    "id": "http-backoff",
+    "split": "dev",
+    "prompt": "Many clients retry a saturated endpoint at the same fixed interval. What retry strategy reduces synchronized spikes?",
+    "patterns": [
+      "\\bbackoff\\b",
+      "\\bjitter\\b"
+    ],
+    "smoke": "backoff jitter"
+  },
+  {
+    "id": "http-type",
+    "split": "holdout",
+    "prompt": "Which request header labels a JSON request body's media type?",
+    "patterns": [
+      "\\bContent-Type\\b"
+    ],
+    "smoke": "Content-Type"
+  },
+  {
+    "id": "http-accept",
+    "split": "dev",
+    "prompt": "Which header asks the server for a specific response media type?",
+    "patterns": [
+      "\\bAccept\\b"
+    ],
+    "smoke": "Accept"
+  },
+  {
+    "id": "http-cache",
+    "split": "dev",
+    "prompt": "Which HTTP request header sends a previously received ETag for cache validation?",
+    "patterns": [
+      "\\bIf-None-Match\\b"
+    ],
+    "smoke": "If-None-Match"
+  },
+  {
+    "id": "http-location",
+    "split": "dev",
+    "prompt": "Which response header supplies the target URI of a redirect?",
+    "patterns": [
+      "\\bLocation\\b"
+    ],
+    "smoke": "Location"
+  },
+  {
+    "id": "http-head",
+    "split": "holdout",
+    "prompt": "Which HTTP method requests GET metadata without the response body?",
+    "patterns": [
+      "\\bHEAD\\b"
+    ],
+    "smoke": "HEAD"
+  },
+  {
+    "id": "http-patch",
+    "split": "dev",
+    "prompt": "Which HTTP method is intended for partial modifications?",
+    "patterns": [
+      "\\bPATCH\\b"
+    ],
+    "smoke": "PATCH"
+  },
+  {
+    "id": "http-query",
+    "split": "dev",
+    "prompt": "What symbol starts the query component in a URL?",
+    "patterns": [
+      "\\bquestion mark\\b"
+    ],
+    "smoke": "question mark"
+  },
+  {
+    "id": "cli-directory",
+    "split": "dev",
+    "prompt": "Which shell command prints the current working directory on Unix?",
+    "patterns": [
+      "\\bpwd\\b"
+    ],
+    "smoke": "pwd"
+  },
+  {
+    "id": "cli-parent",
+    "split": "dev",
+    "prompt": "Which command moves one directory up in Bash?",
+    "patterns": [
+      "\\bcd \\.\\."
+    ],
+    "smoke": "cd .."
+  },
+  {
+    "id": "cli-mkdir",
+    "split": "dev",
+    "prompt": "What mkdir option creates missing parent directories?",
+    "patterns": [
+      "\\bmkdir -p\\b"
+    ],
+    "smoke": "mkdir -p"
+  },
+  {
+    "id": "cli-find",
+    "split": "holdout",
+    "prompt": "Which Unix command recursively searches for files by name?",
+    "patterns": [
+      "\\bfind\\b"
+    ],
+    "smoke": "find"
+  },
+  {
+    "id": "cli-lines",
+    "split": "dev",
+    "prompt": "Which wc option counts newline characters?",
+    "patterns": [
+      "\\bwc -l\\b"
+    ],
+    "smoke": "wc -l"
+  },
+  {
+    "id": "cli-first",
+    "split": "dev",
+    "prompt": "Which shell command reads the first ten lines of a file by default?",
+    "patterns": [
+      "\\bhead\\b"
+    ],
+    "smoke": "head"
+  },
+  {
+    "id": "cli-last",
+    "split": "dev",
+    "prompt": "Which shell command reads the last ten lines of a file by default?",
+    "patterns": [
+      "\\btail\\b"
+    ],
+    "smoke": "tail"
+  },
+  {
+    "id": "cli-env",
+    "split": "holdout",
+    "prompt": "What Bash builtin marks a variable for inheritance by child processes?",
+    "patterns": [
+      "\\bexport\\b"
+    ],
+    "smoke": "export"
+  },
+  {
+    "id": "cli-pipe",
+    "split": "dev",
+    "prompt": "What shell operator sends stdout from one command to stdin of another?",
+    "patterns": [
+      "\\bpipe\\b"
+    ],
+    "smoke": "pipe"
+  },
+  {
+    "id": "cli-pipeline-failure",
+    "split": "dev",
+    "prompt": "A Bash pipeline reports success even though its first command failed. Which setting makes that failure affect the pipeline exit status?",
+    "patterns": [
+      "\\bpipefail\\b"
+    ],
+    "smoke": "pipefail"
+  },
+  {
+    "id": "cli-redirection",
+    "split": "dev",
+    "prompt": "In Bash, why can cmd 2>&1 >out.txt still print error messages to the terminal?",
+    "patterns": [
+      "\\bleft to right\\b",
+      "\\bstdout\\b"
+    ],
+    "smoke": "left to right stdout"
+  },
+  {
+    "id": "cli-curl",
+    "split": "holdout",
+    "prompt": "Which curl option prints response headers along with the body?",
+    "patterns": [
+      "\\bcurl -i\\b"
+    ],
+    "smoke": "curl -i"
+  },
+  {
+    "id": "debug-port",
+    "split": "dev",
+    "prompt": "What does address already in use usually mean when starting a server?",
+    "patterns": [
+      "\\bport\\b",
+      "\\buse\\b"
+    ],
+    "smoke": "port use"
+  },
+  {
+    "id": "debug-dns",
+    "split": "dev",
+    "prompt": "Which system translates example.com into an IP address?",
+    "patterns": [
+      "\\bDNS\\b"
+    ],
+    "smoke": "DNS"
+  },
+  {
+    "id": "debug-race",
+    "split": "dev",
+    "prompt": "What synchronization mechanism can guard a shared critical section?",
+    "patterns": [
+      "\\block\\b"
+    ],
+    "smoke": "lock"
+  },
+  {
+    "id": "debug-deadlock",
+    "split": "holdout",
+    "prompt": "What is the term when two tasks each hold a lock the other needs and wait forever?",
+    "patterns": [
+      "\\bdeadlock\\b"
+    ],
+    "smoke": "deadlock"
+  },
+  {
+    "id": "debug-timeout",
+    "split": "dev",
+    "prompt": "What client setting bounds how long it waits for a server response?",
+    "patterns": [
+      "\\btimeout\\b"
+    ],
+    "smoke": "timeout"
+  },
+  {
+    "id": "debug-flaky",
+    "split": "dev",
+    "prompt": "What do you call a test that passes or fails intermittently without a related code change?",
+    "patterns": [
+      "\\bflaky\\b"
+    ],
+    "smoke": "flaky"
+  },
+  {
+    "id": "debug-stack",
+    "split": "dev",
+    "prompt": "What diagnostic lists the active call frames at an exception?",
+    "patterns": [
+      "\\bstack trace\\b"
+    ],
+    "smoke": "stack trace"
+  },
+  {
+    "id": "debug-read-modify-write",
+    "split": "holdout",
+    "prompt": "Two threads both run a counter increment as read, add, then write. Why can the final count be one instead of two, and how can you prevent it?",
+    "patterns": [
+      "\\blost update\\b",
+      "\\block\\b"
+    ],
+    "smoke": "lost update lock"
+  },
+  {
+    "id": "test-mock",
+    "split": "dev",
+    "prompt": "What test double lets you assert a dependency was called with specified arguments?",
+    "patterns": [
+      "\\bmock\\b"
+    ],
+    "smoke": "mock"
+  },
+  {
+    "id": "test-regression",
+    "split": "dev",
+    "prompt": "What test type ensures a previously fixed bug does not return?",
+    "patterns": [
+      "\\bregression\\b"
+    ],
+    "smoke": "regression"
+  },
+  {
+    "id": "test-isolation",
+    "split": "dev",
+    "prompt": "What should a unit test substitute for a remote API to avoid real network calls?",
+    "patterns": [
+      "\\bmock\\b"
+    ],
+    "smoke": "mock"
+  },
+  {
+    "id": "test-fixture",
+    "split": "holdout",
+    "prompt": "What is the term for reusable test setup data or state?",
+    "patterns": [
+      "\\bfixture\\b"
+    ],
+    "smoke": "fixture"
+  },
+  {
+    "id": "data-json",
+    "split": "dev",
+    "prompt": "What JSON literal represents an absent value?",
+    "patterns": [
+      "\\bnull\\b"
+    ],
+    "smoke": "null"
+  },
+  {
+    "id": "data-utf8",
+    "split": "dev",
+    "prompt": "What common Unicode encoding uses one to four bytes per code point?",
+    "patterns": [
+      "\\bUTF-8\\b"
+    ],
+    "smoke": "UTF-8"
+  }
+]

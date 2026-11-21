@@ -1,135 +1,66 @@
 # The Receptionist
 
-Cost-aware, safety-first AI query routing between local (edge) and cloud foundation models with transparent metrics and streaming chat UI.
+The Receptionist runs developer prompts through Ollama on your machine or sends them to a cloud model you choose. It starts in **Local Only**. Each reply shows which model handled the request, why it took that route, how long it took, and the estimated cloud cost.
 
-## Product scope
+## Run locally
 
-The Receptionist routes everyday developer questions between local Ollama and cloud OpenAI models. It is for individual developers who want control over when prompts leave their machine and a clear view of which model answered, why it was selected, and how routing affects estimated cloud spend.
+You need Python 3.11 and [Ollama](https://ollama.com/download). Clone the repo and open a terminal in the checkout. Start Ollama first.
 
-Local Only is the default. Select Auto to let the classifier route prompts to the cloud, or select Send next prompt to cloud to send one prompt before returning to your selected mode. Each reply shows the provider and model, routing reason, response time, and estimated cloud cost. Earlier messages remain visible in the chat. Each request uses the current prompt, plus the configured system prompt for cloud requests.
-
-| Workflow | A passing answer |
-| --- | --- |
-| Quick developer lookup | Gives the correct command, syntax, or concept with enough context to use it. |
-| Code explanation | Explains what the snippet does and identifies the relevant behavior or edge case. |
-| Small-snippet debugging | Identifies a plausible cause and gives a concrete next step the developer can verify. |
-
-### Success criteria
-
-- **Privacy** — Local Only submissions stay local even when Ollama fails. The one-shot cloud override explicitly authorizes a separate cloud submission.
-- **Answer quality** — Compare pass rates for automatic routing, all-local, and all-cloud runs using the same held-out prompts and workflow criteria.
-- **Estimated cost** — Compare cloud spend with the configured all-cloud baseline and document the pricing and usage assumptions.
-- **Latency** — Compare median and p95 time to a complete answer across the same prompts and record the local hardware used.
-
-Use the first baseline run to set a minimum acceptable answer pass rate, minimum worthwhile savings, and maximum acceptable p95 latency before tuning the router.
-
-## ✨ Key Features
-* In Auto mode, a lightweight classifier uses keywords, prompt features, and thresholds to choose local or cloud. Its routing score and confidence are heuristics, not calibrated probabilities.
-* One-shot cloud override for user-controlled escalation.
-* OpenAI streaming and buffered Ollama output with original formatting. Provider failures appear in chat with the selected model, and partial output stays visible.
-* Native Streamlit `st.chat_message` interface + high-contrast custom theme (`.streamlit/config.toml`).
-* Estimated cloud spend and savings versus the configured cloud model.
-* Model provenance badges (Local · model / Cloud · model) inline with each answer.
-* Local request share and separate input/output usage.
-* Sanitized config: no embedded secrets; environment variable substitution pattern supported.
-
-## 🧩 Architecture
-```
-User → Classifier → Router ─┬─ LocalModel (Ollama) 
-                                           └─ CloudModel (OpenAI / Anthropic / Gemini)
-                               ↓
-                         MetricsTracker (usage, spend, savings)
-```
-
-## 🔐 Security & Privacy
-* API keys pulled from environment (e.g. `OPENAI_API_KEY`).
-* Config allows `${VAR_NAME}` placeholders; do not commit secrets.
-* In Auto mode, some keywords trigger cloud routing. Cloud requests send the current prompt and configured system prompt. Chat history stays in the Streamlit session, and the dashboard records usage metadata.
-
-## Getting started
-
-Use Python 3.11 and [Ollama](https://ollama.com/download). Run these commands from the repository root after cloning.
+**Windows PowerShell**
 
 ```powershell
-# Windows PowerShell
 py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-```bash
-# macOS or Linux
-python3.11 -m venv .venv
-source .venv/bin/activate
-```
-
-```shell
-python -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ollama pull gemma2:2b
-python -m streamlit run streamlit_app.py
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
 ```
 
-Start Ollama before pulling the model. If needed, run `ollama serve` in a separate terminal. Leave the app in **Local Only** and send a simple prompt to verify the local setup. The response should show the local model. No cloud key is needed.
+**macOS or Linux**
 
-To check OpenAI, set `OPENAI_API_KEY` as an environment variable before launching Streamlit. Select **Send next prompt to cloud** and submit a synthetic prompt such as “Reply with OK.” Confirm the cloud model label and usage in the dashboard. This request may incur a charge.
+```sh
+python3.11 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+ollama pull gemma2:2b
+.venv/bin/python -m streamlit run streamlit_app.py
+```
 
-### Bring your own cloud key
+Open the URL Streamlit prints. Leave the sidebar set to **Local Only** and try “Explain what `git status` shows.” You should see an Ollama model label. Local use requires no API key.
 
-Select OpenAI, Anthropic, or Gemini in the sidebar and choose a model ID. Enter the provider's key in the password field. The key overrides configured credentials for that provider for the current session. Clearing the field restores the configured credential, when available. Local Only stays the default. Auto or a one-shot cloud send uses the selected provider.
+## Choose where prompts go
 
-OpenAI streams replies. Anthropic and Gemini return a complete reply at once. To see estimated cost for a model, add its provider/model entry under `pricing` in `config.yaml` (use `google` for Gemini). If a cloud budget is configured, missing pricing blocks cloud routing.
+| Mode | Behavior |
+| --- | --- |
+| **Local Only** | Runs prompts through Ollama. An Ollama failure stays local. |
+| **Auto** | Uses prompt features, keywords, and configured thresholds to choose Ollama or the selected cloud model. |
+| **Send next prompt to cloud** | Uses the selected cloud model once, subject to the session budget guard, then returns to the current mode. |
 
-## Automated checks
+For cloud use, select OpenAI, Anthropic, or Gemini and enter a model ID and API key in the sidebar. Keys entered there last for the current Streamlit session. You can also set `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GOOGLE_API_KEY` in the environment before launching. Gemini also accepts `GEMINI_API_KEY` through the environment. An entered key overrides the configured credential for that provider.
 
-```shell
+Cloud requests send the current prompt and the configured system instructions. Earlier messages stay visible in the current session and are excluded from the request. OpenAI streams text when **Stream Responses** is on. Ollama, Anthropic, and Gemini return complete replies at once.
+
+## Configure models and spending
+
+See [config.yaml](config.yaml) for model defaults, pricing, and the optional `cloud_budget_usd` setting. Set `RECEPTIONIST_CONFIG` to load a separate config file. Use the provider/model key under `pricing`, such as `openai/gpt-4o-mini`. Use `google` for Gemini. Prices are in USD per thousand tokens, either a flat `per_1k` or separate `input_per_1k` and `output_per_1k` rates.
+
+Cost estimates use provider-reported usage when available and word counts otherwise. The all-cloud baseline prices the recorded workload using the selected cloud model's rates. The optional session budget routes new cloud-bound requests locally once the recorded estimate reaches the limit or pricing is unavailable. A request already in flight can cross the limit.
+
+## Test and benchmark
+
+From the repository root, run these with the virtual environment's Python.
+
+```sh
 python -m unittest discover -s tests -v
 python routing_benchmark.py --mock
 ```
 
-GitHub Actions runs both commands on Python 3.11. The suite uses simulated providers, so it needs neither Ollama nor OpenAI credentials. Run the local and cloud checks above separately to verify the configured models.
+The automated checks use mocked providers and run on Windows and Ubuntu in GitHub Actions. For a live preflight, run `python routing_benchmark.py --verify`. It checks the configured cloud model's reply and usage, then makes a local request.
 
-## Routing benchmark
-
-Run from the repository root after installing dependencies.
-
-- `python routing_benchmark.py --mock` runs the smoke comparison without model calls.
-- `python routing_benchmark.py --live --split holdout` runs the held-out prompts with Ollama and the configured cloud model. Live mode sends synthetic benchmark prompts to the cloud and can incur charges.
-
-The starter set uses simple expected-content checks for quality. Review misses by case ID, and use the development split for tuning. The Local Only policy probe runs separately with mocked providers. Cost is estimated from word counts and configured pricing. Latency covers one non-streaming request per case and strategy.
-
-## ⚙️ Configuration (`config.yaml`)
-```
-local_model:
-   name: gemma2:2b
-   provider: ollama
-cloud_model:
-   name: gpt-4o-mini  # or gpt-5-preview
-   provider: openai
-pricing:
-   openai/gpt-4o-mini: { per_1k: 0.150 }
-   openai/gpt-5-preview: { per_1k: 0.300 }
-   ollama/gemma2:2b: { per_1k: 0.0 }
-   # ...
-cloud_budget_usd: null
-system_prompt: >
-   You are The Receptionist's Cloud Supervisor ...
+```sh
+python routing_benchmark.py --live --split holdout --report benchmark-results.json
 ```
 
-## 📊 Metrics Logic
-* Failed requests with reported usage still count toward spend. Partial replies without provider usage use estimates. Failures without usage or output are excluded from estimates.
-* Cloud usage uses OpenAI token counts when available, including streaming usage. Other usage falls back to separate word-count estimates for input and output. Estimated cloud input includes the system prompt.
-* Spend uses the configured rates. A model can use a flat `per_1k` rate or separate `input_per_1k` and `output_per_1k` rates. Missing pricing is shown as unavailable.
-* The all-cloud baseline prices the recorded input and output counts at the configured cloud model's rates. It estimates routing savings for the same recorded workload, so it does not predict how another model would tokenize or answer a locally handled request.
-* Set `cloud_budget_usd` to a nonnegative dollar amount to route new cloud-bound submissions to Ollama once the session's estimated spend reaches the limit. Cloud-bound submissions also stay local if pricing is missing and a budget is set. The budget is checked before each request, so an in-flight request can cross it. This is a per-session estimate and a separate limit from provider billing.
+The benchmark compares Auto, all-local, and all-cloud on synthetic prompts. Live runs send eligible prompts to the configured cloud provider and can incur charges. It reports keyword-based answer checks, cloud routes, latency, and estimated spend. The optional JSON report records per-case metrics without saving model replies or credentials. Use the development split for tuning and the holdout for evaluation. To verify one Auto policy, use `--strategy auto --score-threshold 0.16 --max-local-words 8` with the desired split. The flags affect only the benchmark run.
 
-## 🛣️ Roadmap Ideas
-* Native streaming for Anthropic and Gemini
-* Fine-grained token accounting (tiktoken)
-* Adaptive learning router with feedback loop
-* PII redaction + opt‑in analytics
-* Evaluation harness for routing precision
+## Contribute
 
-## 📝 License
-MIT
-
----
-PRs welcome. Enjoy saving tokens 🌱
+See [CONTRIBUTING.md](CONTRIBUTING.md) for bug reports and pull requests, [SECURITY.md](SECURITY.md) for private vulnerability reporting, and [LICENSE](LICENSE) for the MIT terms.
