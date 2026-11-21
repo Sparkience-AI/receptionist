@@ -48,6 +48,8 @@ Cost estimates use provider-reported usage when available and word counts otherw
 
 ## Test and benchmark
 
+[Read the routing case study](docs/routing-case-study.md) for the live comparison of Auto, all-local, and all-cloud, with links to the run reports.
+
 From the repository root, run these with the virtual environment's Python.
 
 ```sh
